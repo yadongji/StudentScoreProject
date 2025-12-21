@@ -32,7 +32,7 @@ public class LoginView : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("✅ [LoginView] 初始化");
+        DebugHelper.Log("✅ [LoginView] 初始化");
 
         // 验证组件引用
         ValidateComponents();
@@ -49,7 +49,7 @@ public class LoginView : MonoBehaviour
         // 设置输入框占位符
         SetupInputFields();
 
-        Debug.Log("✅ [LoginView] 启动完成");
+        DebugHelper.Log("✅ [LoginView] 启动完成");
     }
 
     private void OnDestroy()
@@ -66,19 +66,19 @@ public class LoginView : MonoBehaviour
     private void ValidateComponents()
     {
         if (_usernameInput == null)
-            Debug.LogError("❌ [LoginView] Username Input 未分配！");
+            DebugHelper.LogError("❌ [LoginView] Username Input 未分配！");
 
         if (_passwordInput == null)
-            Debug.LogError("❌ [LoginView] Password Input 未分配！");
+            DebugHelper.LogError("❌ [LoginView] Password Input 未分配！");
 
         if (_loginButton == null)
-            Debug.LogError("❌ [LoginView] Login Button 未分配！");
+            DebugHelper.LogError("❌ [LoginView] Login Button 未分配！");
 
         if (_messageText == null)
-            Debug.LogWarning("⚠️ [LoginView] Message Text 未分配");
+            DebugHelper.LogWarning("⚠️ [LoginView] Message Text 未分配");
 
         if (_loadingIndicator == null)
-            Debug.LogWarning("⚠️ [LoginView] Loading Indicator 未分配");
+            DebugHelper.LogWarning("⚠️ [LoginView] Loading Indicator 未分配");
     }
 
     /// <summary>
@@ -134,13 +134,13 @@ public class LoginView : MonoBehaviour
         if (_loginButton != null)
         {
             _loginButton.onClick.AddListener(OnLoginButtonPressed);
-            Debug.Log("✅ [LoginView] 登录按钮事件已绑定");
+            DebugHelper.Log("✅ [LoginView] 登录按钮事件已绑定");
         }
 
         if (_testConnectionButton != null)
         {
             _testConnectionButton.onClick.AddListener(OnTestConnectionButtonPressed);
-            Debug.Log("✅ [LoginView] 测试连接按钮事件已绑定");
+            DebugHelper.Log("✅ [LoginView] 测试连接按钮事件已绑定");
         }
     }
 
@@ -175,7 +175,7 @@ public class LoginView : MonoBehaviour
     public string GetUsername()
     {
         string username = _usernameInput?.text?.Trim() ?? "";
-        Debug.Log($"📝 [LoginView] 获取用户名: {username}");
+        DebugHelper.Log($"📝 [LoginView] 获取用户名: {username}");
         return username;
     }
 
@@ -185,7 +185,7 @@ public class LoginView : MonoBehaviour
     public string GetPassword()
     {
         string password = _passwordInput?.text ?? "";
-        Debug.Log($"📝 [LoginView] 获取密码: {new string('*', password.Length)}");
+        DebugHelper.Log($"📝 [LoginView] 获取密码: {new string('*', password.Length)}");
         return password;
     }
 
@@ -194,7 +194,7 @@ public class LoginView : MonoBehaviour
     /// </summary>
     public void SetLoadingState(bool isLoading)
     {
-        Debug.Log($"🔄 [LoginView] 设置加载状态: {isLoading}");
+        DebugHelper.Log($"🔄 [LoginView] 设置加载状态: {isLoading}");
 
         // 显示/隐藏加载指示器
         if (_loadingIndicator != null)
@@ -221,7 +221,7 @@ public class LoginView : MonoBehaviour
     /// </summary>
     public void ShowSuccessMessage(string message)
     {
-        Debug.Log($"✅ [LoginView] 显示成功消息: {message}");
+        DebugHelper.Log($"✅ [LoginView] 显示成功消息: {message}");
         ShowMessage(message, _successColor);
     }
 

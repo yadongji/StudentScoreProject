@@ -31,7 +31,7 @@ public class GameManager : MonoBehaviour
         if (UIManager == null) UIManager = GetComponentInChildren<UIManager>();
         if (SceneManager == null) SceneManager = GetComponentInChildren<SceneTransitionManager>();
 
-        Debug.Log("✅ GameManager 初始化完成");
+        DebugHelper.Log("✅ GameManager 初始化完成");
     }
 
     /// <summary>

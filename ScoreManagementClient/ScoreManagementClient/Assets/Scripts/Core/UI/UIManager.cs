@@ -22,7 +22,7 @@ public class UIManager : MonoBehaviour
             view = FindObjectOfType<T>();
             if (view == null)
             {
-                Debug.LogError($"❌ 未找到视图: {viewType.Name}");
+                DebugHelper.LogError($"❌ 未找到视图: {viewType.Name}");
                 return null;
             }
 

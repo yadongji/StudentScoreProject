@@ -22,7 +22,7 @@ public class Game3DController : MonoBehaviour, IGame3DController
     /// </summary>
     public void StartGame()
     {
-        Debug.Log("🎮 游戏开始！");
+        DebugHelper.Log("🎮 游戏开始！");
         _gameScore = 0; // 重置分数
         // 其他游戏初始化代码
     }
@@ -34,7 +34,7 @@ public class Game3DController : MonoBehaviour, IGame3DController
     {
         if (!_isGamePaused)
         {
-            Debug.Log("⏸️ 游戏暂停");
+            DebugHelper.Log("⏸️ 游戏暂停");
             _isGamePaused = true;
             Time.timeScale = 0f; // 暂停游戏时间流动
         }
@@ -47,7 +47,7 @@ public class Game3DController : MonoBehaviour, IGame3DController
     {
         if (_isGamePaused)
         {
-            Debug.Log("▶️ 游戏继续");
+            DebugHelper.Log("▶️ 游戏继续");
             _isGamePaused = false;
             Time.timeScale = 1f; // 恢复游戏时间流动
         }
@@ -58,7 +58,7 @@ public class Game3DController : MonoBehaviour, IGame3DController
     /// </summary>
     public void EndGame()
     {
-        Debug.Log($"🎮 游戏结束，最终得分：{_gameScore}");
+        DebugHelper.Log($"🎮 游戏结束，最终得分：{_gameScore}");
         // 这里可以提交分数到服务器
     }
 
@@ -67,6 +67,6 @@ public class Game3DController : MonoBehaviour, IGame3DController
     /// </summary>
     public void GetGameScore()
     {
-        Debug.Log($"🎮 当前分数：{_gameScore}");
+        DebugHelper.Log($"🎮 当前分数：{_gameScore}");
     }
 }

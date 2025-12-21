@@ -31,7 +31,7 @@ public class HttpService : MonoBehaviour, INetworkService
             }
             else
             {
-                Debug.LogError($"❌ GET 请求失败: {url} - {request.error}");
+                DebugHelper.LogError($"❌ GET 请求失败: {url} - {request.error}");
                 onError?.Invoke(request.error);
             }
         }
@@ -61,7 +61,7 @@ public class HttpService : MonoBehaviour, INetworkService
             }
             else
             {
-                Debug.LogError($"❌ POST 请求失败: {url} - {request.error}");
+                DebugHelper.LogError($"❌ POST 请求失败: {url} - {request.error}");
                 onError?.Invoke(request.error);
             }
         }
@@ -91,7 +91,7 @@ public class HttpService : MonoBehaviour, INetworkService
             }
             else
             {
-                Debug.LogError($"❌ PUT 请求失败: {url} - {request.error}");
+                DebugHelper.LogError($"❌ PUT 请求失败: {url} - {request.error}");
                 onError?.Invoke(request.error);
             }
         }
@@ -113,7 +113,7 @@ public class HttpService : MonoBehaviour, INetworkService
             }
             else
             {
-                Debug.LogError($"❌ DELETE 请求失败: {url} - {request.error}");
+                DebugHelper.LogError($"❌ DELETE 请求失败: {url} - {request.error}");
                 onError?.Invoke(request.error);
             }
         }

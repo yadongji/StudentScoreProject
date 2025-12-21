@@ -49,6 +49,6 @@ public class LeaderboardView : BaseView
             scoreText.text = score.Score.ToString();
         }
 
-        Debug.Log($"✅ 排行榜已更新，共 {scores.Count} 条记录");
+        DebugHelper.Log($"✅ 排行榜已更新，共 {scores.Count} 条记录");
     }
 }

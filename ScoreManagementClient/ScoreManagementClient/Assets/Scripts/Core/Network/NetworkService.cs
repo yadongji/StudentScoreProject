@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -30,7 +29,7 @@ public class NetworkService : MonoBehaviour
                     GameObject go = new GameObject("NetworkService");
                     _instance = go.AddComponent<NetworkService>();
                     DontDestroyOnLoad(go);
-                    Debug.Log("✅ [NetworkService] 自动创建单例实例");
+                    DebugHelper.Log("✅ [NetworkService] 自动创建单例实例");
                 }
             }
 
@@ -43,7 +42,7 @@ public class NetworkService : MonoBehaviour
         // 确保只有一个实例
         if (_instance != null && _instance != this)
         {
-            Debug.LogWarning("⚠️ [NetworkService] 检测到重复实例，销毁当前实例");
+            DebugHelper.LogWarning("⚠️ [NetworkService] 检测到重复实例，销毁当前实例");
             Destroy(gameObject);
             return;
         }
@@ -51,14 +50,14 @@ public class NetworkService : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
 
-        Debug.Log("✅ [NetworkService] 初始化完成");
+        DebugHelper.Log("✅ [NetworkService] 初始化完成");
     }
 
     #endregion
 
     #region 配置
 
-    [Header("服务器配置")] [SerializeField] private string _baseUrl = "http://localhost:5624";
+    [Header("服务器配置")] [SerializeField] private string _baseUrl = "http://localhost:5000";
     [SerializeField] private float _requestTimeout = 10f;
 
     [Header("认证")] private string _authToken;
@@ -77,7 +76,7 @@ public class NetworkService : MonoBehaviour
     public void SetBaseUrl(string url)
     {
         _baseUrl = url.TrimEnd('/');
-        Debug.Log($"🌐 [NetworkService] 设置服务器地址: {_baseUrl}");
+        DebugHelper.Log($"🌐 [NetworkService] 设置服务器地址: {_baseUrl}");
     }
 
     /// <summary>
@@ -94,7 +93,7 @@ public class NetworkService : MonoBehaviour
     public void SetAuthToken(string token)
     {
         _authToken = token;
-        Debug.Log($"🔑 [NetworkService] 设置认证令牌: {token?.Substring(0, Math.Min(10, token?.Length ?? 0))}...");
+        DebugHelper.Log($"🔑 [NetworkService] 设置认证令牌: {token?.Substring(0, Math.Min(10, token?.Length ?? 0))}...");
     }
 
     /// <summary>
@@ -103,7 +102,7 @@ public class NetworkService : MonoBehaviour
     public void ClearAuthToken()
     {
         _authToken = null;
-        Debug.Log("🔑 [NetworkService] 清除认证令牌");
+        DebugHelper.Log("🔑 [NetworkService] 清除认证令牌");
     }
 
     /// <summary>
@@ -123,7 +122,7 @@ public class NetworkService : MonoBehaviour
     /// </summary>
     public void TestConnection(Action<bool, string> callback)
     {
-        Debug.Log($"🔌 [NetworkService] 测试连接: {_baseUrl}");
+        DebugHelper.Log($"🔌 [NetworkService] 测试连接: {_baseUrl}");
         StartCoroutine(TestConnectionCoroutine(callback));
     }
 
@@ -135,19 +134,19 @@ public class NetworkService : MonoBehaviour
         {
             request.timeout = (int)_requestTimeout;
 
-            Debug.Log($"📤 [NetworkService] 发送请求: GET {url}");
+            DebugHelper.Log($"📤 [NetworkService] 发送请求: GET {url}");
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                Debug.Log($"✅ [NetworkService] 连接成功: {request.downloadHandler.text}");
+                DebugHelper.Log($"✅ [NetworkService] 连接成功: {request.downloadHandler.text}");
                 callback?.Invoke(true, "连接成功");
                 OnSuccess?.Invoke("连接成功");
             }
             else
             {
                 string error = $"连接失败: {request.error}";
-                Debug.LogError($"❌ [NetworkService] {error}");
+                DebugHelper.LogError($"❌ [NetworkService] {error}");
                 callback?.Invoke(false, error);
                 OnError?.Invoke(error);
             }
@@ -163,7 +162,7 @@ public class NetworkService : MonoBehaviour
     /// </summary>
     public void Login(string username, string password, Action<bool, string> callback)
     {
-        Debug.Log($"🔐 [NetworkService] 登录请求: 用户名={username}");
+        DebugHelper.Log($"🔐 [NetworkService] 登录请求: 用户名={username}");
         StartCoroutine(LoginCoroutine(username, password, callback));
     }
 
@@ -188,8 +187,8 @@ public class NetworkService : MonoBehaviour
             request.SetRequestHeader("Content-Type", "application/json");
             request.timeout = (int)_requestTimeout;
 
-            Debug.Log($"📤 [NetworkService] 发送登录请求: POST {url}");
-            Debug.Log($"📦 [NetworkService] 请求数据: {jsonData}");
+            DebugHelper.Log($"📤 [NetworkService] 发送登录请求: POST {url}");
+            DebugHelper.Log($"📦 [NetworkService] 请求数据: {jsonData}");
 
             yield return request.SendWebRequest();
 

@@ -27,12 +27,12 @@ public class ScoreService : HttpService
             request,
             response =>
             {
-                Debug.Log($"✅ 成绩提交成功: {response.message}");
+                DebugHelper.Log($"✅ 成绩提交成功: {response.message}");
                 callback?.Invoke(true, response.message);
             },
             error =>
             {
-                Debug.LogError($"❌ 成绩提交失败: {error}");
+                DebugHelper.LogError($"❌ 成绩提交失败: {error}");
                 callback?.Invoke(false, $"提交失败: {error}");
             }
         );
@@ -53,12 +53,12 @@ public class ScoreService : HttpService
             if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
                 var scores = JsonHelper.ParseArray<ScoreRecord>(www.downloadHandler.text);
-                Debug.Log($"✅ 获取到 {scores.Count} 条排行榜记录");
+                DebugHelper.Log($"✅ 获取到 {scores.Count} 条排行榜记录");
                 callback?.Invoke(scores);
             }
             else
             {
-                Debug.LogError($"❌ 获取排行榜失败: {www.error}");
+                DebugHelper.LogError($"❌ 获取排行榜失败: {www.error}");
                 callback?.Invoke(new List<ScoreRecord>());
             }
         }
@@ -75,12 +75,12 @@ public class ScoreService : HttpService
             endpoint,
             score =>
             {
-                Debug.Log($"✅ 获取玩家最高分: {score.PlayerName} - {score.Score}");
+                DebugHelper.Log($"✅ 获取玩家最高分: {score.PlayerName} - {score.Score}");
                 callback?.Invoke(score);
             },
             error =>
             {
-                Debug.LogWarning($"⚠️ 未找到玩家记录: {playerName}");
+                DebugHelper.LogWarning($"⚠️ 未找到玩家记录: {playerName}");
                 callback?.Invoke(null);
             }
         );

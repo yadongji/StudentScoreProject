@@ -17,11 +17,11 @@ public class LoginController : MonoBehaviour
 
         if (_networkService == null)
         {
-            Debug.LogError("❌ [LoginController] NetworkService 未找到！");
+            DebugHelper.LogError("❌ [LoginController] NetworkService 未找到！");
             return;
         }
 
-        Debug.Log("✅ [LoginController] 初始化完成");
+        DebugHelper.Log("✅ [LoginController] 初始化完成");
     }
 
     private void Start()
@@ -31,11 +31,11 @@ public class LoginController : MonoBehaviour
         {
             _view.OnLoginButtonClick += OnLoginButtonClicked;
             _view.OnTestConnectionClick += TestConnection;
-            Debug.Log("✅ [LoginController] 视图事件绑定成功");
+            DebugHelper.Log("✅ [LoginController] 视图事件绑定成功");
         }
         else
         {
-            Debug.LogError("❌ [LoginController] LoginView 未分配！");
+            DebugHelper.LogError("❌ [LoginController] LoginView 未分配！");
         }
 
         // 检查是否有保存的 Token
@@ -60,23 +60,23 @@ public class LoginController : MonoBehaviour
 
         if (!string.IsNullOrEmpty(savedToken))
         {
-            Debug.Log(
+            DebugHelper.Log(
                 $"🔑 [LoginController] 发现已保存的 Token: {savedToken.Substring(0, Mathf.Min(20, savedToken.Length))}...");
             // 可以选择自动跳转到主界面，或提示用户
             _view?.ShowInfoMessage("检测到已登录状态");
         }
         else
         {
-            Debug.Log("ℹ️ [LoginController] 未发现保存的 Token，需要登录");
+            DebugHelper.Log("ℹ️ [LoginController] 未发现保存的 Token，需要登录");
         }
     }
 
     /// <summary>
     /// 登录按钮点击事件处理
     /// </summary>
-    public async void OnLoginButtonClicked()
+    public void OnLoginButtonClicked()
     {
-        Debug.Log("==================== 🔐 开始登录流程 ====================");
+        DebugHelper.Log("==================== 🔐 开始登录流程 ====================");
 
         // 获取用户输入
         string username = _view.GetUsername();
@@ -92,10 +92,10 @@ public class LoginController : MonoBehaviour
         _view.SetLoadingState(true);
         _view.ShowInfoMessage("正在登录...");
 
-        Debug.Log($"📝 [LoginController] 用户名: {username}");
-        Debug.Log($"📝 [LoginController] 密码长度: {password.Length} 字符");
-        Debug.Log($"🌐 [LoginController] 请求地址: {_networkService.GetBaseUrl()}/auth/login");
-        Debug.Log($"⏰ [LoginController] 请求时间: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        DebugHelper.Log($"📝 [LoginController] 用户名: {username}");
+        DebugHelper.Log($"📝 [LoginController] 密码长度: {password.Length} 字符");
+        DebugHelper.Log($"🌐 [LoginController] 请求地址: {_networkService.GetBaseUrl()}/auth/login");
+        DebugHelper.Log($"⏰ [LoginController] 请求时间: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 
         try
         {
@@ -104,18 +104,18 @@ public class LoginController : MonoBehaviour
             {
                 if (success)
                 {
-                    Debug.Log("✅ 登录成功！");
+                    DebugHelper.Log("✅ 登录成功！");
                 }
                 else
                 {
-                    Debug.LogError($"❌ 登录失败: {message}");
+                    DebugHelper.LogError($"❌ 登录失败: {message}");
                 }
             });
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"❌ [LoginController] 登录异常: {ex.Message}");
-            Debug.LogError($"   StackTrace: {ex.StackTrace}");
+            DebugHelper.LogError($"❌ [LoginController] 登录异常: {ex.Message}");
+            DebugHelper.LogError($"   StackTrace: {ex.StackTrace}");
 
             _view.ShowErrorMessage($"登录失败: {ex.Message}");
         }

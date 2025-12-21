@@ -8,7 +8,7 @@ using UnityEngine;
 public class NetworkConfig : ScriptableObject
 {
     [Header("服务器配置")] [Tooltip("服务器基础URL")]
-    public string BaseUrl = "http://localhost:5264/api";
+    public string BaseUrl = "http://localhost:5000/api";
 
     [Header("请求配置")] [Tooltip("请求超时时间（秒）")]
     public float RequestTimeout = 10f;
