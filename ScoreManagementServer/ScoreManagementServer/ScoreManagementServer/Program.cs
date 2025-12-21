@@ -1,9 +1,10 @@
-using ScoreManagementServer.Services;
+using ScoreManagementServer.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ⚠️ 明确指定监听地址
-builder.WebHost.UseUrls("http://localhost:5264");
+builder.WebHost.UseUrls("http://localhost:5000");
 
 // 添加控制器支持
 builder.Services.AddControllers();
@@ -11,6 +12,10 @@ builder.Services.AddControllers();
 // 添加 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// 👇 【关键】注册数据库上下文
+builder.Services.AddDbContext<GameDbContext>(options =>
+    options.UseSqlite("Data Source=StudentsData.db"));
 
 // CORS 配置
 builder.Services.AddCors(options =>
@@ -23,9 +28,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 注册 ScoreService
-var connectionString = "Data Source=StudentsData.db";
-builder.Services.AddSingleton(new ScoreService(connectionString));
 
 var app = builder.Build();
 

@@ -47,6 +47,7 @@ E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManageme
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.csproj.CoreCompileInputs.cache
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.MvcApplicationPartsAssemblyInfo.cs
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.MvcApplicationPartsAssemblyInfo.cache
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.sourcelink.json
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\rjimswa.dswa.cache.json
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -62,3 +63,8 @@ E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManageme
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.pdb
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ScoreManagementServer.genruntimeconfig.cache
 E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\obj\Debug\net10.0\ref\ScoreManagementServer.dll
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.dll
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Sqlite.dll
+E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer\ScoreManagementServer\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
