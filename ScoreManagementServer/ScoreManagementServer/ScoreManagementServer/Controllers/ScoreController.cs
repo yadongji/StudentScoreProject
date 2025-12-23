@@ -8,336 +8,58 @@ namespace ScoreManagementServer.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ScoreController : ControllerBase
+    // Controllers/StudentScoreController.cs
+    public class StudentScoreController : ControllerBase
     {
-        private readonly ScoreService _scoreService;
+        private readonly CsvImportService _csvImportService;
+        private readonly ScoreService _studentScoreService;
 
-        public ScoreController(ScoreService scoreService)
+        public StudentScoreController(CsvImportService csvImportService, ScoreService studentScoreService)
         {
-            _scoreService = scoreService;
+            _csvImportService = csvImportService;
+            _studentScoreService = studentScoreService;
         }
 
-        #region 原有功能
-
-        // POST api/score
-        [HttpPost]
-        public async Task<IActionResult> SaveScore([FromBody] ScoreRequest request)
+        [HttpPost("import")]
+        public async Task<IActionResult> ImportCsv(IFormFile file)
         {
-            await _scoreService.SaveScoreAsync(request.PlayerName, request.Score);
-            return Ok(new { message = "Score saved successfully" });
+            if (file == null || file.Length == 0)
+                return BadRequest("请上传文件");
+
+            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                return BadRequest("只支持CSV格式文件");
+
+            using var stream = file.OpenReadStream();
+            var result = await _csvImportService.ImportFromCsvAsync(stream);
+
+            return Ok(new
+            {
+                success = result.FailedCount == 0,
+                successCount = result.SuccessCount,
+                failedCount = result.FailedCount,
+                errors = result.Errors
+            });
         }
 
-        // GET api/score/top?limit=10
-        [HttpGet("top")]
-        public async Task<IActionResult> GetTopScores([FromQuery] int limit = 10)
+        [HttpGet("student/{studentName}")]
+        public async Task<IActionResult> GetStudentScore(string studentName)
         {
-            var scores = await _scoreService.GetTopScoresAsync(limit);
+            var score = await _studentScoreService.GetStudentScoreAsync(studentName);
+        
+            if (score == null)
+                return NotFound($"未找到学生: {studentName}");
+
+            return Ok(score);
+        }
+
+        [HttpGet("class/{className}")]
+        public async Task<IActionResult> GetClassScores(string className)
+        {
+            var scores = await _studentScoreService.GetClassScoresAsync(className);
             return Ok(scores);
         }
-
-        // GET api/score/player/{playerName}
-        [HttpGet("player/{playerName}")]
-        public async Task<IActionResult> GetPlayerBestScore(string playerName)
-        {
-            var score = await _scoreService.GetPlayerBestScoreAsync(playerName);
-            return score != null ? Ok(score) : NotFound();
-        }
-
-        #endregion
-
-        #region 学生查询成绩
-
-        /// <summary>
-        /// 学生查询自己的所有成绩
-        /// GET api/score/student/my-scores?semester=2024-1&courseId=c001
-        /// </summary>
-        [HttpGet("student/my-scores")]
-        [Authorize(Roles = "Student")] // 需要学生身份
-        public async Task<IActionResult> GetMyScores(
-            [FromQuery] string? semester = null,
-            [FromQuery] string? courseId = null)
-        {
-            try
-            {
-                // 从 JWT Token 中获取学生ID
-                var studentId = User.FindFirst("userId")?.Value 
-                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (string.IsNullOrEmpty(studentId))
-                {
-                    return Unauthorized(new { message = "无法获取学生身份信息" });
-                }
-
-                var scores = await _scoreService.GetStudentScoresAsync(
-                    studentId, 
-                    semester, 
-                    courseId);
-
-                return Ok(new ApiResponse<List<StudentScore>>
-                {
-                    Success = true,
-                    Message = "获取成绩成功",
-                    Data = scores
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取成绩失败: {ex.Message}"
-                });
-            }
-        }
-
-        /// <summary>
-        /// 学生查询成绩统计信息（平均分、GPA等）
-        /// GET api/score/student/statistics?semester=2024-1
-        /// </summary>
-        [HttpGet("student/statistics")]
-        [Authorize(Roles = "Student")]
-        public async Task<IActionResult> GetMyStatistics([FromQuery] string? semester = null)
-        {
-            try
-            {
-                var studentId = User.FindFirst("userId")?.Value;
-                
-                if (string.IsNullOrEmpty(studentId))
-                {
-                    return Unauthorized(new { message = "无法获取学生身份信息" });
-                }
-
-                var statistics = await _scoreService.GetStudentStatisticsAsync(studentId, semester);
-
-                return Ok(new ApiResponse<StudentStatistics>
-                {
-                    Success = true,
-                    Message = "获取统计信息成功",
-                    Data = statistics
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取统计信息失败: {ex.Message}"
-                });
-            }
-        }
-
-        #endregion
-
-        #region 教师查询班级成绩
-
-        /// <summary>
-        /// 教师查询班级所有学生成绩
-        /// GET api/score/teacher/class/{classId}?semester=2024-1&courseId=c001
-        /// </summary>
-        [HttpGet("teacher/class/{classId}")]
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> GetClassScores(
-            string classId,
-            [FromQuery] string? semester = null,
-            [FromQuery] string? courseId = null)
-        {
-            try
-            {
-                // 从 JWT Token 中获取教师ID
-                var teacherId = User.FindFirst("userId")?.Value;
-
-                if (string.IsNullOrEmpty(teacherId))
-                {
-                    return Unauthorized(new { message = "无法获取教师身份信息" });
-                }
-
-                // 验证教师是否有权限查看该班级
-                var hasPermission = await _scoreService.ValidateTeacherClassPermissionAsync(
-                    teacherId, 
-                    classId);
-
-                if (!hasPermission)
-                {
-                    return Forbid("您没有权限查看该班级的成绩");
-                }
-
-                var scores = await _scoreService.GetClassScoresAsync(
-                    classId, 
-                    semester, 
-                    courseId);
-
-                return Ok(new ApiResponse<List<ClassScoreItem>>
-                {
-                    Success = true,
-                    Message = "获取班级成绩成功",
-                    Data = scores
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取班级成绩失败: {ex.Message}"
-                });
-            }
-        }
-
-        /// <summary>
-        /// 教师查询班级成绩统计
-        /// GET api/score/teacher/class/{classId}/statistics?courseId=c001&semester=2024-1
-        /// </summary>
-        [HttpGet("teacher/class/{classId}/statistics")]
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> GetClassStatistics(
-            string classId,
-            [FromQuery] string courseId,
-            [FromQuery] string? semester = null)
-        {
-            try
-            {
-                var teacherId = User.FindFirst("userId")?.Value;
-
-                if (string.IsNullOrEmpty(teacherId))
-                {
-                    return Unauthorized(new { message = "无法获取教师身份信息" });
-                }
-
-                // 验证权限
-                var hasPermission = await _scoreService.ValidateTeacherClassPermissionAsync(
-                    teacherId, 
-                    classId);
-
-                if (!hasPermission)
-                {
-                    return Forbid("您没有权限查看该班级的成绩");
-                }
-
-                if (string.IsNullOrEmpty(courseId))
-                {
-                    return BadRequest(new { message = "请指定课程ID" });
-                }
-
-                var statistics = await _scoreService.GetClassCourseStatisticsAsync(
-                    classId, 
-                    courseId, 
-                    semester);
-
-                return Ok(new ApiResponse<ClassStatistics>
-                {
-                    Success = true,
-                    Message = "获取统计信息成功",
-                    Data = statistics
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取统计信息失败: {ex.Message}"
-                });
-            }
-        }
-
-        /// <summary>
-        /// 教师获取所管辖的班级列表
-        /// GET api/score/teacher/my-classes
-        /// </summary>
-        [HttpGet("teacher/my-classes")]
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> GetMyClasses()
-        {
-            try
-            {
-                var teacherId = User.FindFirst("userId")?.Value;
-
-                if (string.IsNullOrEmpty(teacherId))
-                {
-                    return Unauthorized(new { message = "无法获取教师身份信息" });
-                }
-
-                var classes = await _scoreService.GetTeacherClassesAsync(teacherId);
-
-                return Ok(new ApiResponse<List<ClassInfo>>
-                {
-                    Success = true,
-                    Message = "获取班级列表成功",
-                    Data = classes
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取班级列表失败: {ex.Message}"
-                });
-            }
-        }
-
-        #endregion
-
-        #region 通用查询
-
-        /// <summary>
-        /// 获取可用的学期列表
-        /// GET api/score/semesters
-        /// </summary>
-        [HttpGet("semesters")]
-        [Authorize]
-        public async Task<IActionResult> GetSemesters()
-        {
-            try
-            {
-                var semesters = await _scoreService.GetAvailableSemestersAsync();
-                
-                return Ok(new ApiResponse<List<string>>
-                {
-                    Success = true,
-                    Data = semesters
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取学期列表失败: {ex.Message}"
-                });
-            }
-        }
-
-        /// <summary>
-        /// 获取课程列表
-        /// GET api/score/courses?semester=2024-1
-        /// </summary>
-        [HttpGet("courses")]
-        [Authorize]
-        public async Task<IActionResult> GetCourses([FromQuery] string? semester = null)
-        {
-            try
-            {
-                var courses = await _scoreService.GetAvailableCoursesAsync(semester);
-                
-                return Ok(new ApiResponse<List<CourseInfo>>
-                {
-                    Success = true,
-                    Data = courses
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = $"获取课程列表失败: {ex.Message}"
-                });
-            }
-        }
-
-        #endregion
     }
+
 
     #region 数据模型
 
@@ -357,18 +79,64 @@ namespace ScoreManagementServer.Controllers
     }
 
     // 学生成绩模型
+    // Models/StudentScore.cs
     public class StudentScore
     {
-        public string ScoreId { get; set; } = string.Empty;
-        public string CourseId { get; set; } = string.Empty;
-        public string CourseName { get; set; } = string.Empty;
-        public string Semester { get; set; } = string.Empty;
-        public float Score { get; set; }
-        public string Level { get; set; } = string.Empty; // 优秀/良好/及格/不及格
-        public int Credits { get; set; } // 学分
-        public DateTime ExamDate { get; set; }
+        public int Id { get; set; }
+        public string StudentName { get; set; }
+        public string ClassName { get; set; }
+    
+        // 语文
+        public decimal? ChineseScore { get; set; }
+        public int? ChineseClassRank { get; set; }
+        public int? ChineseGradeRank { get; set; }
+    
+        // 数学
+        public decimal? MathScore { get; set; }
+        public int? MathClassRank { get; set; }
+        public int? MathGradeRank { get; set; }
+    
+        // 英语
+        public decimal? EnglishScore { get; set; }
+        public int? EnglishClassRank { get; set; }
+        public int? EnglishGradeRank { get; set; }
+    
+        // 物理
+        public decimal? PhysicsScore { get; set; }
+        public int? PhysicsClassRank { get; set; }
+        public int? PhysicsGradeRank { get; set; }
+    
+        // 化学
+        public decimal? ChemistryScore { get; set; }
+        public int? ChemistryClassRank { get; set; }
+        public int? ChemistryGradeRank { get; set; }
+    
+        // 生物
+        public decimal? BiologyScore { get; set; }
+        public int? BiologyClassRank { get; set; }
+        public int? BiologyGradeRank { get; set; }
+    
         public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
+
+// DTO for API responses
+    public class StudentScoreDto
+    {
+        public string StudentName { get; set; }
+        public string ClassName { get; set; }
+        public List<SubjectScore> Subjects { get; set; }
+        public decimal AverageScore { get; set; }
+    }
+
+    public class SubjectScore
+    {
+        public string SubjectName { get; set; }
+        public decimal? Score { get; set; }
+        public int? ClassRank { get; set; }
+        public int? GradeRank { get; set; }
+    }
+
 
     // 学生统计信息
     public class StudentStatistics

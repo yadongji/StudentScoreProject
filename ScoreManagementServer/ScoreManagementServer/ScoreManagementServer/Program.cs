@@ -13,6 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<CsvImportService>();
+builder.Services.AddScoped<ScoreService>();
+
 // 👇 【关键】注册数据库上下文
 builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseSqlite("Data Source=StudentsData.db"));
