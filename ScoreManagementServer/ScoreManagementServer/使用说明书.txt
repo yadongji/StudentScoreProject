@@ -1,0 +1,185 @@
+================================================================================
+                    学生成绩管理系统 - 使用说明书
+================================================================================
+
+一、系统简介
+------------
+本系统是一个基于 Python 和 SQLite 的学生成绩管理工具，提供以下三大核心功能：
+1. 导入 Excel 成绩到数据库
+2. 查看班级排名变化趋势
+3. 查看学生个人成绩趋势（支持综合查看）
+
+
+二、环境准备
+------------
+1. Python 环境
+   - 下载地址：https://www.python.org/downloads/
+   - 建议版本：Python 3.8 或更高版本
+   - 安装时务必勾选 "Add Python to PATH"
+
+2. 必需的 Python 库
+   安装方法：打开命令行（CMD 或 PowerShell），执行以下命令：
+   
+   pip install openpyxl
+   pip install matplotlib
+   pip install numpy
+
+   如果安装速度慢，可以使用国内镜像源：
+   pip install openpyxl -i https://pypi.tuna.tsinghua.edu.cn/simple
+   pip install matplotlib -i https://pypi.tuna.tsinghua.edu.cn/simple
+   pip install numpy -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+三、功能说明
+------------
+【功能一】导入 Excel 成绩
+--------------------------
+使用方法：
+1. 双击运行 "导入Excel成绩V2版.bat"
+2. 在命令行中输入 Excel 文件的完整路径（或直接拖拽文件到窗口）
+3. 按提示输入考试名称、考试日期
+4. 系统自动识别并导入所有成绩
+
+支持的 Excel 格式：
+- 文件格式：.xlsx 或 .xls
+- 必须包含列：学号、姓名
+- 科目列：语文、数学、英语、物理、化学、生物、政治、历史、地理、总分
+- 排名列：XX校名次、XX班名次（XX为科目名）
+
+注意：
+- 总分对应的列名为：总分分数、总成绩 或 总分
+- 总分校名次对应的列名为：总分校名次
+- 总分班名次对应的列名为：总分班名次
+
+
+【功能二】查看班级排名
+--------------------------
+使用方法：
+1. 双击运行 "run_class_rank_visualizer.bat"
+2. 选择班级编号
+3. 选择科目编号（如：1.语文）
+4. 选择排名类型：
+   - 1. 年级排名（默认）
+   - 2. 班级排名
+5. 选择时间范围：
+   - 1. 本学期（最近6个月）
+   - 2. 最近两次考试
+   - 3. 全部历史数据
+6. 输入退步显示阈值（默认5名，即退步5名及以上才显示）
+7. 查看分析结果：
+   - 进步学生列表
+   - 明显退步学生列表
+   - 统计摘要（总人数、进步人数、退步人数、平均变化等）
+8. 查询完毕后，可输入 y 继续查询，或输入 n 退出
+
+功能特点：
+- 支持按时间范围筛选数据
+- 显示排名变化（正数表示进步，负数表示倒退）
+- 自动过滤缺考学生
+- 支持连续查询多个班级或科目
+
+
+【功能三】查看成绩趋势
+--------------------------
+使用方法：
+1. 双击运行 "run_trend_visualizer.bat"
+2. 输入学号或姓名（支持模糊搜索）
+3. 从搜索结果中选择学生
+4. 选择查询方式：
+   - 1-N：查看单个学科成绩趋势
+   - N+1：全部科目对比图
+   - N+2：综合查看（含总分排名变化）⭐推荐
+5. 是否显示年级排名（y/n）
+6. 查看图表和文字摘要
+7. 查询完毕后，可输入 y 继续查询，或输入 n 退出
+
+综合查看功能特点：
+- 左侧 Y 轴：显示各学科分数变化（彩色折线）
+- 右侧 Y 轴：显示总分排名变化（红色虚线）
+- 折线上标注：进步/退步标记（如 ↑+5、↓-26）
+- 图表保存：自动保存为 PNG 图片
+- 文字摘要：打印总分排名变化表格
+
+
+四、文件结构
+------------
+ScoreManagementServer/
+├── excel_to_sqlite_v2.py          # 导入Excel成绩脚本
+├── class_rank_visualizer.py         # 查看班级排名脚本
+├── score_trend_visualizer.py         # 查看成绩趋势脚本
+├── 导入Excel成绩V2版.bat            # 导入成绩快捷方式
+├── run_class_rank_visualizer.bat     # 查看班级排名快捷方式
+├── run_trend_visualizer.bat         # 查看成绩趋势快捷方式
+├── database_schema_simple.sql        # 数据库结构说明
+└── StudentData.db                   # SQLite 数据库文件
+
+
+五、常见问题
+------------
+Q1: 运行 bat 文件时提示"不是内部或外部命令"
+A1: Python 环境变量未配置，请重新安装 Python 并勾选 "Add Python to PATH"
+
+Q2: 提示"ModuleNotFoundError: No module named 'xxx'"
+A2: 缺少 Python 库，请按照第二部分安装所需的库
+
+Q3: Excel 导入后数据库中没有数据
+A3: 检查 Excel 列名是否符合要求（学号、姓名、科目名、排名名）
+
+Q4: 查看班级排名时显示"有记录人数: 0人"
+A4: 该班级在该科目下考试次数少于2次，请选择其他科目或时间范围
+
+Q5: 图表中的中文字符显示为方块
+A5: 安装中文字体，或将 matplotlib 的字体配置修改为系统支持的字体
+
+Q6: 如何查看数据库中的数据？
+A6: 使用 SQLite 数据库查看工具（如 DB Browser for SQLite）打开 StudentData.db
+
+
+六、数据库结构说明
+------------------
+主要表结构：
+
+1. Students（学生表）
+   - StudentId: 学生ID（主键）
+   - StudentNumber: 学号
+   - StudentName: 姓名
+   - ClassName: 班级名称
+
+2. Subjects（科目表）
+   - SubjectId: 科目ID（主键）
+   - SubjectName: 科目名称
+   - SortOrder: 排序顺序
+
+3. Exams（考试表）
+   - ExamId: 考试ID（主键）
+   - ExamName: 考试名称
+   - ExamDate: 考试日期
+
+4. Scores（成绩表）
+   - ScoreId: 成绩ID（主键）
+   - StudentId: 学生ID（外键）
+   - ExamId: 考试ID（外键）
+   - SubjectId: 科目ID（外键）
+   - Score: 分数
+   - ClassRank: 班级排名
+   - GradeRank: 年级排名
+
+
+七、技术支持
+------------
+- Python 官网：https://www.python.org/
+- PyPI（Python包索引）：https://pypi.org/
+- Matplotlib 文档：https://matplotlib.org/
+- OpenPyXL 文档：https://openpyxl.readthedocs.io/
+
+
+八、版本信息
+------------
+- 当前版本：v2.0
+- 更新日期：2025年
+- 作者：学生成绩管理系统团队
+
+
+================================================================================
+                        感谢使用本系统！
+================================================================================
