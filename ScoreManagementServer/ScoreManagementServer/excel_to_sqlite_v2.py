@@ -175,6 +175,112 @@ def import_students():
         traceback.print_exc()
 
 
+def detect_sheet_columns(headers):
+    """
+    智能检测Excel表的列位置
+    优先级：
+    1. 检测学号列（包含"学号"或"考号"二字）
+    2. 如果没有学号，检测姓名列（包含"姓名"二字）
+    3. 检测学科成绩列（学科名或学科名+成绩/分数）
+    4. 检测排名列（成绩列附近查找"班级排名"/"班次"/"年级排名"）
+    """
+    # 列索引映射（从0开始）
+    col_map = {}
+
+    # 1. 优先检测学号列
+    for idx, header in enumerate(headers):
+        if header and ('学号' in header or '考号' in header):
+            col_map['学号'] = idx
+            break
+
+    # 2. 如果没找到学号，检测姓名列
+    if '学号' not in col_map:
+        for idx, header in enumerate(headers):
+            if header and '姓名' in header:
+                col_map['姓名'] = idx
+                break
+
+    # 3. 检测班级列
+    for idx, header in enumerate(headers):
+        if header and '班级' in header:
+            col_map['班级'] = idx
+            break
+
+    # 4. 检测总分相关列
+    for idx, header in enumerate(headers):
+        if header:
+            if '总分分数' in header or '总分' == header:
+                col_map['总分_score'] = idx
+            elif '总分校名次' in header or '总分班级排名' in header:
+                col_map['总分_grade_rank'] = idx
+            elif '总分班名次' in header or '总分班级名次' in header:
+                col_map['总分_class_rank'] = idx
+
+    # 5. 检测各学科成绩和排名列
+    for subject_name in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']:
+        # 成绩列：支持 "学科名", "学科名成绩", "学科名分数"
+        score_col = None
+        for idx, header in enumerate(headers):
+            if header:
+                if (header == subject_name or
+                    f'{subject_name}成绩' in header or
+                    f'{subject_name}分数' in header):
+                    col_map[f'{subject_name}_score'] = idx
+                    score_col = idx
+                    break
+
+        # 班级排名列：成绩列后查找 "班名次", "班级名次", "班级排名", "班次"
+        if score_col is not None:
+            # 优先查找带学科前缀的排名列
+            class_rank_col = None
+            for idx in range(score_col + 1, min(score_col + 3, len(headers))):
+                header = headers[idx]
+                if header and (f'{subject_name}班名次' in header or
+                              f'{subject_name}班级名次' in header or
+                              f'{subject_name}班级排名' in header):
+                    col_map[f'{subject_name}_class_rank'] = idx
+                    class_rank_col = idx
+                    break
+
+            # 如果没找到带学科前缀的，查找通用的"班次"、"班级排名"等
+            if class_rank_col is None:
+                for idx in range(score_col + 1, min(score_col + 3, len(headers))):
+                    header = headers[idx]
+                    if header and ('班次' in header or '班级排名' in header or '班级名次' in header):
+                        col_map[f'{subject_name}_class_rank'] = idx
+                        break
+
+        # 年级/学校排名列：成绩列后查找 "年级名次", "年级排名", "校名次", "校次"
+        if score_col is not None:
+            # 优先查找带学科前缀的排名列
+            for idx in range(score_col + 1, min(score_col + 5, len(headers))):
+                header = headers[idx]
+                if header and (f'{subject_name}年级名次' in header or
+                              f'{subject_name}年级排名' in header or
+                              f'{subject_name}校名次' in header or
+                              f'{subject_name}校次' in header):
+                    col_map[f'{subject_name}_grade_rank'] = idx
+                    break
+
+            # 如果没找到带学科前缀的，查找通用的"年级排名"、"年级名次"、"校名次"、"校次"等
+            # 注意：需要判断是否已被其他学科占用
+            found = False
+            for idx in range(score_col + 1, min(score_col + 5, len(headers))):
+                header = headers[idx]
+                if header and ('年级排名' in header or '年级名次' in header or '校名次' in header or '校次' in header):
+                    # 检查该列是否已被分配给其他学科
+                    is_assigned = any(f'{subj}_grade_rank' in col_map and col_map[f'{subj}_grade_rank'] == idx
+                                    for subj in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理'])
+                    if not is_assigned:
+                        col_map[f'{subject_name}_grade_rank'] = idx
+                        found = True
+                        break
+                elif found:
+                    break
+
+    return col_map
+
+
 def import_scores():
     """导入学生成绩"""
     print("\n📊 导入学生成绩")
@@ -216,45 +322,8 @@ def import_scores():
         print(f"  总列数: {ws.max_column}")
         print(f"  表头列: {headers}")
 
-        # 创建字段映射
-        col_map = {}
-        for idx, header in enumerate(headers):
-            if header:
-                # 学号和姓名
-                if '学号' in header or '考号' in header:
-                    col_map['学号'] = idx
-                elif '姓名' in header:
-                    col_map['姓名'] = idx
-
-                # 班级
-                if '班级' in header:
-                    col_map['班级'] = idx
-
-                # 总分相关（可选）
-                if '总分分数' in header or '总分' == header:
-                    col_map['总分_score'] = idx
-                if '总分校名次' in header or '总分班级排名' in header:
-                    col_map['总分_grade_rank'] = idx
-                if '总分班名次' in header or '总分班级名次' in header:
-                    col_map['总分_class_rank'] = idx
-
-                # 科目成绩和排名 - 支持多种格式
-                for subject_name in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']:
-                    # 成绩列：支持 "语文", "语文成绩", "语文分数"
-                    if (f'{subject_name}' == header or
-                        f'{subject_name}成绩' in header or
-                        f'{subject_name}分数' in header):
-                        col_map[f'{subject_name}_score'] = idx
-                    # 班级排名：支持 "语文班名次", "语文班级名次", "语文班级排名"
-                    elif (f'{subject_name}班名次' in header or
-                          f'{subject_name}班级名次' in header or
-                          f'{subject_name}班级排名' in header):
-                        col_map[f'{subject_name}_class_rank'] = idx
-                    # 年级/学校排名：支持 "语文年级名次", "语文年级排名", "语文校名次"
-                    elif (f'{subject_name}年级名次' in header or
-                          f'{subject_name}年级排名' in header or
-                          f'{subject_name}校名次' in header):
-                        col_map[f'{subject_name}_grade_rank'] = idx
+        # 使用智能列检测
+        col_map = detect_sheet_columns(headers)
 
         print(f"\n🔍 字段映射:")
         print(f"  {col_map}")
@@ -388,22 +457,26 @@ def import_scores():
                         pass
 
                 # 读取班级排名
-                class_rank_cell = row[col_map.get(f'{subject_name}_class_rank')]
                 class_rank = None
-                if class_rank_cell and class_rank_cell.value:
-                    try:
-                        class_rank = int(float(class_rank_cell.value))
-                    except:
-                        pass
+                class_rank_col = col_map.get(f'{subject_name}_class_rank')
+                if class_rank_col is not None:
+                    class_rank_cell = row[class_rank_col]
+                    if class_rank_cell and class_rank_cell.value:
+                        try:
+                            class_rank = int(float(class_rank_cell.value))
+                        except:
+                            pass
 
                 # 读取年级排名
-                grade_rank_cell = row[col_map.get(f'{subject_name}_grade_rank')]
                 grade_rank = None
-                if grade_rank_cell and grade_rank_cell.value:
-                    try:
-                        grade_rank = int(float(grade_rank_cell.value))
-                    except:
-                        pass
+                grade_rank_col = col_map.get(f'{subject_name}_grade_rank')
+                if grade_rank_col is not None:
+                    grade_rank_cell = row[grade_rank_col]
+                    if grade_rank_cell and grade_rank_cell.value:
+                        try:
+                            grade_rank = int(float(grade_rank_cell.value))
+                        except:
+                            pass
 
                 # 如果有成绩则插入或更新
                 if score is not None:

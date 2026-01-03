@@ -84,7 +84,7 @@ def get_all_subjects(conn, student_id):
 
 
 def plot_trend(scores, subject_name, student_name, show_grade_rank=True):
-    """绘制成绩趋势图"""
+    """绘制成绩趋势图（仅显示年级排名）"""
     if len(scores) < 2:
         print("⚠️  该学生只有1次考试记录，无法绘制趋势图")
         return
@@ -92,28 +92,19 @@ def plot_trend(scores, subject_name, student_name, show_grade_rank=True):
     # 提取数据
     exam_names = [s['ExamName'] for s in scores]
     exam_dates = [datetime.strptime(s['ExamDate'], '%Y-%m-%d') for s in scores]
-    exam_scores = [s['Score'] for s in scores]
     grade_ranks = [s['GradeRank'] if s['GradeRank'] else 0 for s in scores]
 
-    # 创建图表
+    # 创建图表（仅用于显示排名）
     fig, ax1 = plt.subplots(figsize=(12, 6))
 
-    # 绘制成绩折线
-    color1 = '#3498db'  # 蓝色
+    # 绘制年级排名折线
+    color = '#e74c3c'  # 红色
     ax1.set_xlabel('考试时间', fontsize=12)
-    ax1.set_ylabel('分数', color=color1, fontsize=12)
-    line1 = ax1.plot(exam_dates, exam_scores, 'o-', color=color1, linewidth=2.5, markersize=8, label='分数')
-    ax1.tick_params(axis='y', labelcolor=color1)
+    ax1.set_ylabel('年级排名', color=color, fontsize=12)
+    line1 = ax1.plot(exam_dates, grade_ranks, 'o-', color=color, linewidth=2.5, markersize=8, label='年级排名')
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.invert_yaxis()  # 排名越小越好，反转y轴
     ax1.grid(True, alpha=0.3)
-
-    # 如果需要，绘制年级排名折线（使用右侧y轴）
-    if show_grade_rank and any(r > 0 for r in grade_ranks):
-        ax2 = ax1.twinx()
-        color2 = '#e74c3c'  # 红色
-        ax2.set_ylabel('年级排名', color=color2, fontsize=12)
-        line2 = ax2.plot(exam_dates, grade_ranks, 's--', color=color2, linewidth=2, markersize=8, label='年级排名')
-        ax2.tick_params(axis='y', labelcolor=color2)
-        ax2.invert_yaxis()  # 排名越小越好，反转y轴
 
     # 设置x轴格式
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -121,15 +112,11 @@ def plot_trend(scores, subject_name, student_name, show_grade_rank=True):
     plt.xticks(rotation=45, ha='right')
 
     # 添加数据标签
-    for i, (x, y_score, y_rank) in enumerate(zip(exam_dates, exam_scores, grade_ranks)):
-        # 成绩标签
-        ax1.text(x, y_score, f'{y_score:.1f}',
-                ha='center', va='bottom', fontsize=9, color=color1, fontweight='bold')
-
-        # 排名标签（如果有）
-        if show_grade_rank and y_rank > 0:
-            ax2.text(x, y_rank, f'#{y_rank}',
-                    ha='center', va='top', fontsize=9, color=color2, fontweight='bold')
+    for i, (x, y_rank) in enumerate(zip(exam_dates, grade_ranks)):
+        # 排名标签
+        if y_rank > 0:
+            ax1.text(x, y_rank, f'#{y_rank}',
+                    ha='center', va='top', fontsize=9, color=color, fontweight='bold')
 
         # 进步/退步标记（基于排名变化）
         if i > 0 and y_rank > 0 and grade_ranks[i-1] > 0:
@@ -148,20 +135,17 @@ def plot_trend(scores, subject_name, student_name, show_grade_rank=True):
             # 计算两个日期之间的中间点
             date_diff = x - exam_dates[i-1]
             mid_x = exam_dates[i-1] + date_diff / 2
-            mid_y = (exam_scores[i-1] + y_score) / 2
+            mid_y = (grade_ranks[i-1] + y_rank) / 2
             ax1.text(mid_x, mid_y, trend_text,
                     ha='center', va='center', fontsize=10,
                     color=trend_color, fontweight='bold',
                     bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 
-    # 合并图例
-    lines = line1 + (line2 if show_grade_rank and any(r > 0 for r in grade_ranks) else [])
-    labels = [l.get_label() for l in lines]
-    if lines:
-        ax1.legend(lines, labels, loc='best')
+    # 图例
+    ax1.legend([line1], ['年级排名'], loc='best')
 
     # 标题
-    title = f'{student_name} - {subject_name}成绩趋势'
+    title = f'{student_name} - {subject_name}年级排名变化趋势'
     plt.title(title, fontsize=14, fontweight='bold', pad=20)
 
     plt.tight_layout()
@@ -327,14 +311,14 @@ def main():
 
 
 def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
-    """绘制所有科目对比图"""
+    """绘制所有科目对比图（仅显示年级排名）"""
     cursor = conn.cursor()
     cursor.execute("""
         SELECT
             e.ExamDate,
             e.ExamName,
             sb.SubjectName,
-            s.Score,
+            s.GradeRank,
             sb.SortOrder
         FROM Scores s
         JOIN Exams e ON s.ExamId = e.ExamId
@@ -368,11 +352,11 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
             found = False
             for s in all_scores:
                 if s['ExamDate'] == exam and s['SubjectName'] == subject:
-                    data_matrix[subject].append(s['Score'])
+                    data_matrix[subject].append(s['GradeRank'] if s['GradeRank'] else 999)
                     found = True
                     break
             if not found:
-                data_matrix[subject].append(np.nan)  # 使用nan表示缺失数据
+                data_matrix[subject].append(999)  # 999 表示缺考
 
     # 绘制
     fig, ax = plt.subplots(figsize=(14, 8))
@@ -385,17 +369,20 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
             continue
 
         exam_dates = [datetime.strptime(d, '%Y-%m-%d') for d in exams]
-        scores = data_matrix[subject]
+        ranks = data_matrix[subject]
         color = colors[i % len(colors)]
 
-        ax.plot(exam_dates, scores, 'o-', color=color, linewidth=2, markersize=6,
-                label=subject, alpha=0.8)
+        # 只绘制有效数据（非999）
+        valid_data = [(x, y) for x, y in zip(exam_dates, ranks) if y != 999]
+        if valid_data:
+            valid_dates, valid_ranks = zip(*valid_data)
+            ax.plot(valid_dates, valid_ranks, 'o-', color=color, linewidth=2, markersize=6,
+                    label=subject, alpha=0.8)
 
-        # 添加数据标签
-        for j, (x, y) in enumerate(zip(exam_dates, scores)):
-            if not np.isnan(y):
-                ax.text(x, y, f'{y:.1f}',
-                       ha='center', va='bottom', fontsize=8, color=color)
+            # 添加数据标签
+            for x, y in zip(valid_dates, valid_ranks):
+                ax.text(x, y, f'#{y}',
+                       ha='center', va='top', fontsize=8, color=color, fontweight='bold')
 
     # 设置x轴
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -405,11 +392,12 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
     # 网格和标签
     ax.grid(True, alpha=0.3)
     ax.set_xlabel('考试时间', fontsize=12)
-    ax.set_ylabel('分数', fontsize=12)
+    ax.set_ylabel('年级排名', fontsize=12)
+    ax.invert_yaxis()  # 排名越小越好，反转y轴
     plt.legend(loc='best', ncol=3, fontsize=10)
 
     # 标题
-    title = f'{student_name} - 全部科目成绩对比'
+    title = f'{student_name} - 全部科目年级排名对比'
     plt.title(title, fontsize=14, fontweight='bold', pad=20)
 
     plt.tight_layout()
@@ -423,7 +411,7 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
 
 
 def plot_comprehensive_view(conn, student_id, student_name):
-    """综合查看：展示所有学科成绩和总分排名变化趋势"""
+    """综合查看：展示所有学科和总分的年级排名变化趋势"""
     # 获取所有学科成绩数据
     cursor = conn.cursor()
     cursor.execute("""
@@ -431,7 +419,6 @@ def plot_comprehensive_view(conn, student_id, student_name):
             e.ExamDate,
             e.ExamName,
             sb.SubjectName,
-            s.Score,
             s.GradeRank,
             sb.SortOrder,
             sb.SubjectId
@@ -460,26 +447,22 @@ def plot_comprehensive_view(conn, student_id, student_name):
             subject_info[subject_name] = {'SortOrder': s['SortOrder'], 'SubjectId': s['SubjectId']}
     subjects = sorted(subject_info.keys(), key=lambda x: subject_info[x]['SortOrder'])
 
-    # 构建分数矩阵和排名矩阵
-    score_matrix = {}
+    # 构建排名矩阵
     rank_matrix = {}
     for subject in subjects:
-        score_matrix[subject] = []
         rank_matrix[subject] = []
         for exam in exams:
             found = False
             for s in all_scores:
                 if s['ExamDate'] == exam and s['SubjectName'] == subject:
-                    score_matrix[subject].append(s['Score'])
-                    rank_matrix[subject].append(s['GradeRank'])
+                    rank_matrix[subject].append(s['GradeRank'] if s['GradeRank'] else 999)
                     found = True
                     break
             if not found:
-                score_matrix[subject].append(np.nan)
                 rank_matrix[subject].append(999)  # 999 表示缺考
 
-    # 创建双y轴图表
-    fig, ax1 = plt.subplots(figsize=(16, 9))
+    # 创建图表
+    fig, ax = plt.subplots(figsize=(16, 9))
 
     # 学科颜色映射
     colors = {
@@ -489,48 +472,38 @@ def plot_comprehensive_view(conn, student_id, student_name):
         '总分': '#c0392b'  # 总分用深红色
     }
 
-    # 绘制各学科分数折线（左y轴）
+    # 绘制各学科排名折线
     for subject in subjects:
-        if subject == '总分':
-            continue  # 总分单独处理
-
         exam_dates = [datetime.strptime(d, '%Y-%m-%d') for d in exams]
-        scores = score_matrix[subject]
+        ranks = rank_matrix[subject]
         color = colors.get(subject, '#95a5a6')
 
-        # 只绘制有数据的部分
-        valid_data = [(x, y) for x, y in zip(exam_dates, scores) if not np.isnan(y)]
-        if valid_data:
-            valid_dates, valid_scores = zip(*valid_data)
-            ax1.plot(valid_dates, valid_scores, 'o-', color=color, linewidth=2,
-                    markersize=6, label=f'{subject}(分数)', alpha=0.7)
-
-    # 绘制总分排名折线（右y轴）
-    if '总分' in subjects:
-        exam_dates = [datetime.strptime(d, '%Y-%m-%d') for d in exams]
-        grade_ranks = rank_matrix['总分']
-        color = colors['总分']
-
-        valid_data = [(x, y) for x, y in zip(exam_dates, grade_ranks) if y != 999]
+        # 只绘制有效数据（非999）
+        valid_data = [(x, y) for x, y in zip(exam_dates, ranks) if y != 999]
         if valid_data:
             valid_dates, valid_ranks = zip(*valid_data)
-            ax2 = ax1.twinx()
-            ax2.plot(valid_dates, valid_ranks, 's--', color=color, linewidth=2.5,
-                    markersize=8, label='总分排名', alpha=0.9)
-            ax2.set_ylabel('总分排名', color=color, fontsize=13)
-            ax2.tick_params(axis='y', labelcolor=color)
-            ax2.invert_yaxis()  # 排名越小越好，反转y轴
+            linewidth = 2.5 if subject == '总分' else 2
+            markersize = 8 if subject == '总分' else 6
+            linestyle = '--' if subject == '总分' else '-'
+            alpha = 0.9 if subject == '总分' else 0.7
 
-            # 添加总分排名标签和变化标记
-            for i, (x, y) in enumerate(zip(valid_dates, valid_ranks)):
-                # 排名标签
-                ax2.text(x, y, f'#{y}', ha='center', va='bottom',
-                        fontsize=10, color=color, fontweight='bold')
+            ax.plot(valid_dates, valid_ranks, 'o', color=color,
+                    linewidth=linewidth, markersize=markersize,
+                    linestyle=linestyle, label=subject, alpha=alpha)
 
-                # 变化标记（非第一次考试）
-                if i > 0:
+            # 添加排名标签
+            for x, y in zip(valid_dates, valid_ranks):
+                ax.text(x, y, f'#{y}',
+                       ha='center', va='top',
+                       fontsize=9 if subject != '总分' else 10,
+                       color=color, fontweight='bold')
+
+            # 总分添加变化标记
+            if subject == '总分' and len(valid_ranks) > 1:
+                for i in range(1, len(valid_ranks)):
                     prev_rank = valid_ranks[i-1]
-                    rank_change = prev_rank - y  # 前一次排名 - 当前排名
+                    curr_rank = valid_ranks[i]
+                    rank_change = prev_rank - curr_rank  # 前一次排名 - 当前排名
 
                     if rank_change > 0:
                         change_text = f'↑+{rank_change}'
@@ -542,34 +515,30 @@ def plot_comprehensive_view(conn, student_id, student_name):
                         change_text = '→0'
                         change_color = 'gray'
 
-                    date_diff = x - valid_dates[i-1]
+                    date_diff = valid_dates[i] - valid_dates[i-1]
                     mid_x = valid_dates[i-1] + date_diff / 2
-                    mid_y = (prev_rank + y) / 2
+                    mid_y = (prev_rank + curr_rank) / 2
 
-                    ax2.text(mid_x, mid_y, change_text, ha='center', va='center',
-                            fontsize=11, color=change_color, fontweight='bold',
-                            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
+                    ax.text(mid_x, mid_y, change_text, ha='center', va='center',
+                           fontsize=11, color=change_color, fontweight='bold',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
 
-    # 设置左y轴
-    ax1.set_xlabel('考试时间', fontsize=13)
-    ax1.set_ylabel('学科分数', fontsize=13)
-    ax1.grid(True, alpha=0.3)
+    # 设置y轴
+    ax.set_xlabel('考试时间', fontsize=13)
+    ax.set_ylabel('年级排名', fontsize=13)
+    ax.invert_yaxis()  # 排名越小越好，反转y轴
+    ax.grid(True, alpha=0.3)
 
     # 设置x轴
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     plt.xticks(rotation=45, ha='right')
 
-    # 合并图例
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels() if '总分' in subjects and len([r for r in rank_matrix['总分'] if r != 999]) > 0 else ([], [])
-    lines = lines1 + lines2
-    labels = labels1 + labels2
-    if lines:
-        ax1.legend(lines, labels, loc='best', ncol=3, fontsize=10)
+    # 图例
+    ax.legend(loc='best', ncol=3, fontsize=10)
 
     # 标题
-    title = f'{student_name} - 综合成绩分析（学科分数 + 总分排名变化）'
+    title = f'{student_name} - 综合成绩分析（年级排名变化）'
     plt.title(title, fontsize=15, fontweight='bold', pad=20)
 
     plt.tight_layout()

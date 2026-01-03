@@ -103,6 +103,71 @@ def clean_student_name(name):
     return name if name else None
 
 
+def detect_sheet_columns(ws):
+    """
+    智能检测Excel表的列位置
+    优先级：
+    1. 检测学号列（包含"学号"二字）
+    2. 如果没有学号，检测姓名列（包含"姓名"二字）
+    3. 检测学科成绩列（学科名下方的"成绩"）
+    4. 检测排名列（成绩列下方的"班级排名"/"班次"/"年级排名"）
+    """
+    # 获取第2行和第3行的标题
+    header_row1 = [ws.cell(2, col).value for col in range(1, ws.max_column + 1)]
+    header_row2 = [ws.cell(3, col).value for col in range(1, ws.max_column + 1)]
+
+    # 列索引（从1开始）
+    student_number_col = None
+    student_name_col = None
+    score_col = None
+    class_rank_col = None
+    grade_rank_col = None
+
+    # 1. 优先检测学号列（在第2行或第3行中查找包含"学号"的列）
+    for col_idx in range(1, ws.max_column + 1):
+        header1 = header_row1[col_idx - 1]
+        header2 = header_row2[col_idx - 1]
+        if (header1 and '学号' in str(header1)) or (header2 and '学号' in str(header2)):
+            student_number_col = col_idx
+            break
+
+    # 2. 如果没找到学号，检测姓名列
+    if not student_number_col:
+        for col_idx in range(1, ws.max_column + 1):
+            header1 = header_row1[col_idx - 1]
+            header2 = header_row2[col_idx - 1]
+            if (header1 and '姓名' in str(header1)) or (header2 and '姓名' in str(header2)):
+                student_name_col = col_idx
+                break
+
+    # 3. 检测学科成绩列（查找"成绩"字样的列）
+    # 查找第3行中包含"成绩"的列
+    for col_idx in range(1, ws.max_column + 1):
+        header2 = header_row2[col_idx - 1]
+        if header2 and '成绩' in str(header2):
+            score_col = col_idx
+            break
+
+    # 4. 检测排名列
+    # 如果找到了成绩列，检查成绩列附近是否有排名列
+    if score_col:
+        # 检查成绩列后面几列是否有"班级排名"/"班次"
+        for col_idx in range(score_col + 1, min(score_col + 3, ws.max_column + 1)):
+            header2 = header_row2[col_idx - 1]
+            if header2 and ('班级排名' in str(header2) or '班次' in str(header2)):
+                class_rank_col = col_idx
+                break
+
+        # 检查成绩列后面几列是否有"年级排名"
+        for col_idx in range(score_col + 1, min(score_col + 5, ws.max_column + 1)):
+            header2 = header_row2[col_idx - 1]
+            if header2 and '年级排名' in str(header2):
+                grade_rank_col = col_idx
+                break
+
+    return student_number_col, student_name_col, score_col, class_rank_col, grade_rank_col
+
+
 def import_time_limit_sheet(conn, ws, exam_id, subject_id, class_name):
     """导入一个sheet的数据"""
     success_count = 0
@@ -110,39 +175,56 @@ def import_time_limit_sheet(conn, ws, exam_id, subject_id, class_name):
     errors = []
 
     try:
-        # Excel结构说明：
-        # 第1行：标题（忽略）
-        # 第2,3行：合并的列名
-        #   - 第2,3行合并第2列：学生姓名
-        #   - 第2,3行合并第3列：学校学号
-        #   - 第2行第4-8列合并：科目
-        #   - 第3行第4列：成绩
-        #   - 第3行第5列：班级排名
-        #   - 第3行第7列：年级排名
-        # 从第4行开始是数据
+        # 智能检测列位置
+        student_number_col, student_name_col, score_col, class_rank_col, grade_rank_col = detect_sheet_columns(ws)
 
-        # 直接按列位置读取
-        col_name = 2          # 学生姓名
-        col_school_number = 3    # 学校学号
-        col_score = 4          # 成绩
-        col_class_rank = 5       # 班级排名
-        col_grade_rank = 7       # 年级排名
+        print(f"\n  检测到的列位置:")
+        if student_number_col:
+            print(f"    学号列: 第{student_number_col}列")
+        if student_name_col:
+            print(f"    姓名列: 第{student_name_col}列")
+        if score_col:
+            print(f"    成绩列: 第{score_col}列")
+        if class_rank_col:
+            print(f"    班级排名列: 第{class_rank_col}列")
+        if grade_rank_col:
+            print(f"    年级排名列: 第{grade_rank_col}列")
 
-        print(f"\n  列位置: 姓名={col_name}, 学号={col_school_number}, 成绩={col_score}, 班级排名={col_class_rank}, 年级排名={col_grade_rank}")
+        # 验证是否检测到必要的列
+        if not score_col:
+            errors.append("未检测到成绩列，请检查Excel格式")
+            fail_count += 1
+            return success_count, fail_count, errors
+
+        if not student_number_col and not student_name_col:
+            errors.append("未检测到学号列或姓名列，请检查Excel格式")
+            fail_count += 1
+            return success_count, fail_count, errors
 
         # 从第4行开始读取数据
         for row_idx in range(4, ws.max_row + 1):
             try:
                 row = list(ws[row_idx])
-                name_cell = row[col_name - 1]
-                number_cell = row[col_school_number - 1]
-                score_cell = row[col_score - 1]
 
-                # 读取数据
-                name = clean_student_name(name_cell.value)
-                school_number = str(number_cell.value).strip() if number_cell.value else None
+                # 读取学生标识（学号优先，其次姓名）
+                school_number = None
+                name = None
 
-                # 检查是否缺考（成绩为--符号）
+                if student_number_col:
+                    number_cell = row[student_number_col - 1]
+                    school_number = str(number_cell.value).strip() if number_cell.value else None
+
+                if student_name_col:
+                    name_cell = row[student_name_col - 1]
+                    name = clean_student_name(name_cell.value)
+
+                # 如果有学号，使用学号；否则使用姓名
+                if not school_number and not name:
+                    fail_count += 1
+                    continue
+
+                # 读取成绩
+                score_cell = row[score_col - 1]
                 score_value = str(score_cell.value).strip() if score_cell.value else ''
                 is_absent = False
 
@@ -156,23 +238,23 @@ def import_time_limit_sheet(conn, ws, exam_id, subject_id, class_name):
                         is_absent = True
                         score = None
 
-                if not name or not school_number:
-                    fail_count += 1
-                    continue
-
                 # 查找学生ID
                 cursor = conn.cursor()
-                cursor.execute("SELECT StudentId FROM Students WHERE StudentNumber = ?", (school_number,))
-                student_result = cursor.fetchone()
+                student_result = None
 
-                if not student_result:
-                    # 尝试用姓名和班级匹配
+                # 优先使用学号查询
+                if school_number:
+                    cursor.execute("SELECT StudentId FROM Students WHERE StudentNumber = ?", (school_number,))
+                    student_result = cursor.fetchone()
+
+                # 如果学号查询失败，尝试用姓名和班级匹配
+                if not student_result and name:
                     cursor.execute("SELECT StudentId FROM Students WHERE StudentName = ? AND ClassName = ?",
                                  (name, class_name))
                     student_result = cursor.fetchone()
 
                 if not student_result:
-                    errors.append(f"找不到学生: {name}({school_number})")
+                    errors.append(f"找不到学生: {name or '未知'}({school_number or '无学号'})")
                     fail_count += 1
                     continue
 
@@ -180,58 +262,37 @@ def import_time_limit_sheet(conn, ws, exam_id, subject_id, class_name):
 
                 # 读取班级排名
                 class_rank = None
-                class_rank_cell = row[col_class_rank - 1]
-                if class_rank_cell.value is not None:
-                    rank_value = str(class_rank_cell.value).strip()
-                    if rank_value and rank_value not in ['--', '-', '', 'None']:
-                        try:
-                            # 先尝试int，如果失败再尝试float再转int
-                            class_rank = int(float(rank_value))
-                        except:
+                if class_rank_col:
+                    class_rank_cell = row[class_rank_col - 1]
+                    if class_rank_cell.value is not None:
+                        rank_value = str(class_rank_cell.value).strip()
+                        if rank_value and rank_value not in ['--', '-', '', 'None']:
                             try:
-                                # 如果float也失败，直接转int
-                                class_rank = int(rank_value)
+                                class_rank = int(float(rank_value))
                             except:
-                                pass
+                                try:
+                                    class_rank = int(rank_value)
+                                except:
+                                    pass
 
                 # 读取年级排名
                 grade_rank = None
-                grade_rank_cell = row[col_grade_rank - 1]
-                if grade_rank_cell.value is not None:
-                    rank_value = str(grade_rank_cell.value).strip()
-                    if rank_value and rank_value not in ['--', '-', '', 'None']:
-                        try:
-                            # 先尝试int，如果失败再尝试float再转int
-                            grade_rank = int(float(rank_value))
-                        except:
+                if grade_rank_col:
+                    grade_rank_cell = row[grade_rank_col - 1]
+                    if grade_rank_cell.value is not None:
+                        rank_value = str(grade_rank_cell.value).strip()
+                        if rank_value and rank_value not in ['--', '-', '', 'None']:
                             try:
-                                # 如果float也失败，直接转int
-                                grade_rank = int(rank_value)
+                                grade_rank = int(float(rank_value))
                             except:
-                                pass
-
-                # 检查是否缺考（成绩为--符号）
-                score_value = str(score_cell.value).strip() if score_cell.value else ''
-                is_absent = False
-
-                if score_value in ['--', '-', '']:
-                    is_absent = True
-                    score = None
-                    # 注意：缺考时排名也要清空
-                    class_rank = None
-                    grade_rank = None
-                else:
-                    try:
-                        score = float(score_value)
-                    except:
-                        is_absent = True
-                        score = None
-                        class_rank = None
-                        grade_rank = None
+                                try:
+                                    grade_rank = int(rank_value)
+                                except:
+                                    pass
 
                 # 如果缺考，记录但不保存到数据库
                 if is_absent:
-                    errors.append(f"{name}({school_number}): 缺考")
+                    errors.append(f"{name or '未知'}({school_number or '无学号'}): 缺考")
                     fail_count += 1
                     continue
 
