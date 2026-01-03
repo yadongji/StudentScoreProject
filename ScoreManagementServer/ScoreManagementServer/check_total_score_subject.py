@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """检查数据库中是否有总分科目（SubjectId=10）"""
 import sqlite3
+import os
 
-DB_PATH = "E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer/StudentData.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "StudentData.db")
 
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()

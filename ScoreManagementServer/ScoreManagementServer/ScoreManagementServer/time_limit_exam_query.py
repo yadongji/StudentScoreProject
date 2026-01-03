@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
 import numpy as np
+import os
 
-# 数据库路径
-DB_PATH = r'E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer/StudentData.db'
+# 数据库路径 - 使用相对路径
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'StudentData.db')
 
 # 设置中文字体
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun']

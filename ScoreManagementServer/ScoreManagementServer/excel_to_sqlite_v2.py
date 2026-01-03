@@ -19,8 +19,8 @@ except ImportError:
     sys.exit(1)
 
 # 配置
-DB_PATH = "E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer/StudentData.db"
-SCHEMA_FILE = "E:\StudentScoreProject\ScoreManagementServer\ScoreManagementServer/database_schema_simple.sql"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "StudentData.db")
+SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "database_schema_simple.sql")
 
 # 科目映射表 - 使用科目名作为key，数据库SubjectId作为value
 SUBJECT_IDS = {
