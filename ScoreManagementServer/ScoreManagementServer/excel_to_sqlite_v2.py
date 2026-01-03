@@ -74,6 +74,90 @@ def create_database():
     return True
 
 
+def update_database_schema():
+    """更新数据库架构：允许StudentNumber为NULL"""
+    print(f"\n🔄 正在检查并更新数据库架构...")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # 检查 Students 表是否存在
+        cursor.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='Students'
+        """)
+        table_exists = cursor.fetchone()
+
+        if not table_exists:
+            print("⚠️  Students 表不存在，跳过架构更新")
+            conn.close()
+            return False
+
+        # 检查 StudentNumber 是否允许 NULL
+        cursor.execute("PRAGMA table_info(Students)")
+        columns = cursor.fetchall()
+
+        studentnumber_notnull = False
+        for col in columns:
+            col_name = col[1]  # 列名在索引1
+            notnull = col[3]  # notnull 约束在索引3
+            if col_name == 'StudentNumber' and notnull == 1:
+                studentnumber_notnull = True
+                break
+
+        if studentnumber_notnull:
+            print("🔧 检测到 StudentNumber 字段不允许为空，正在更新架构...")
+
+            # SQLite 不支持直接修改列约束，需要重建表
+            # 1. 创建新表
+            cursor.execute("""
+                CREATE TABLE Students_new (
+                    StudentId INTEGER PRIMARY KEY AUTOINCREMENT,
+                    StudentNumber TEXT UNIQUE,
+                    StudentName TEXT NOT NULL,
+                    ClassName TEXT,
+                    Gender TEXT CHECK(Gender IN ('男', '女')),
+                    EnrollmentDate TEXT,
+                    IsActive INTEGER DEFAULT 1,
+                    CreatedAt TEXT DEFAULT (datetime('now', 'localtime')),
+                    UpdatedAt TEXT DEFAULT (datetime('now', 'localtime'))
+                )
+            """)
+
+            # 2. 复制数据
+            cursor.execute("""
+                INSERT INTO Students_new (StudentId, StudentNumber, StudentName, ClassName, Gender, EnrollmentDate, IsActive, CreatedAt, UpdatedAt)
+                SELECT StudentId, StudentNumber, StudentName, ClassName, Gender, EnrollmentDate, IsActive, CreatedAt, UpdatedAt
+                FROM Students
+            """)
+
+            # 3. 删除旧表
+            cursor.execute("DROP TABLE Students")
+
+            # 4. 重命名新表
+            cursor.execute("ALTER TABLE Students_new RENAME TO Students")
+
+            # 5. 重建索引
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_students_number ON Students(StudentNumber)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_students_name ON Students(StudentName)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_students_class ON Students(ClassName)")
+
+            conn.commit()
+            print("✅ 数据库架构更新成功：StudentNumber 字段现在可以为空")
+        else:
+            print("✅ 数据库架构已是最新版本")
+
+        conn.close()
+        return True
+
+    except Exception as e:
+        print(f"❌ 数据库架构更新失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def import_students():
     """导入学生信息(仅学号和姓名)"""
     print("\n📋 导入学生信息")
@@ -171,6 +255,236 @@ def import_students():
 
     except Exception as e:
         print(f"\n❌ 导入失败: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+def find_matching_class(cursor, input_class):
+    """根据输入的班级名，在数据库中查找匹配的班级
+
+    匹配规则：
+    1. 精确匹配
+    2. 包含匹配（输入班级名包含在数据库班级名中）
+    3. 反向包含匹配（数据库班级名包含在输入班级名中）
+    4. 数字匹配（提取输入班级名中的数字，与数据库班级名中的数字匹配）
+    """
+    if not input_class or input_class == "None":
+        return None
+
+    # 获取所有已有班级
+    cursor.execute("SELECT DISTINCT ClassName FROM Students WHERE ClassName IS NOT NULL AND ClassName != '' ORDER BY ClassName")
+    all_classes = [row[0] for row in cursor.fetchall()]
+
+    if not all_classes:
+        return input_class  # 数据库中没有班级，直接使用输入的
+
+    # 1. 精确匹配
+    if input_class in all_classes:
+        return input_class
+
+    # 2. 包含匹配
+    for db_class in all_classes:
+        if input_class in db_class:
+            return db_class
+        if db_class in input_class:
+            return db_class
+
+    # 3. 数字匹配
+    import re
+    # 提取输入班级名中的数字
+    input_numbers = re.findall(r'\d+', input_class)
+    if input_numbers:
+        input_num = input_numbers[0]
+        for db_class in all_classes:
+            db_numbers = re.findall(r'\d+', db_class)
+            if db_numbers and db_numbers[0] == input_num:
+                return db_class
+
+    # 都不匹配，使用输入的班级名
+    return input_class
+
+
+def update_students_info():
+    """更新学生信息（根据姓名查找并更新学号等信息）"""
+    print("\n📋 更新学生信息")
+    print("-" * 50)
+    print("说明：此功能根据姓名在数据库中查找学生，并更新学号等信息")
+    print("      如果数据库中不存在该学生，将自动添加新学生")
+    print("      新增学生时，班级名称会自动匹配数据库中的标准班级名")
+    print("      Excel表格格式与导入学生信息相同")
+
+    file_path = input("请输入Excel文件路径 (如: 107学生考号(新).xlsx): ").strip()
+
+    if not os.path.exists(file_path):
+        print("❌ 文件不存在!")
+        return
+
+    print("\n⏳ 正在处理...")
+
+    try:
+        wb = load_workbook(filename=file_path, read_only=True)
+        ws = wb.active
+
+        # 读取表头
+        headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+
+        # 创建字段映射
+        col_map = {}
+        for idx, header in enumerate(headers):
+            if header:
+                if '学号' in header or '考号' in header:
+                    col_map['学号'] = idx
+                elif '姓名' in header:
+                    col_map['姓名'] = idx
+                elif '班级' in header:
+                    col_map['班级'] = idx
+                elif '性别' in header:
+                    col_map['性别'] = idx
+
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        updated = 0
+        inserted = 0
+        skipped = 0
+        failed = 0
+
+        # 从第2行开始读取数据
+        for row in ws.iter_rows(min_row=2):
+            # 读取姓名（必须）
+            student_name_cell = row[col_map.get('姓名', 1)] if col_map.get('姓名') is not None else None
+            student_name = str(student_name_cell.value).strip() if student_name_cell and student_name_cell.value else ""
+
+            # 读取学号
+            student_number_cell = row[col_map.get('学号', 0)] if col_map.get('学号') is not None else None
+            student_number = str(student_number_cell.value).strip() if student_number_cell and student_number_cell.value else ""
+
+            # 读取班级
+            class_name_cell = row[col_map.get('班级', 2)] if col_map.get('班级') is not None else None
+            input_class_name = str(class_name_cell.value).strip() if class_name_cell and class_name_cell.value else ""
+
+            if not student_name or student_name == "None":
+                continue
+
+            if not student_number or student_number == "None":
+                print(f"⚠️  跳过: {student_name} | 学号为空")
+                skipped += 1
+                continue
+
+            # 如果有班级信息，匹配数据库中的标准班级名
+            matched_class = None
+            if input_class_name:
+                matched_class = find_matching_class(cursor, input_class_name)
+
+            try:
+                # 根据姓名查找学生
+                cursor.execute("SELECT StudentId, StudentNumber, ClassName FROM Students WHERE StudentName = ?", (student_name,))
+                existing = cursor.fetchone()
+
+                if existing:
+                    # 学生已存在，更新
+                    student_id, old_number, old_class = existing
+                    has_change = False
+
+                    # 检查学号是否需要更新
+                    # 条件：Excel中学号不为空，且（数据库中学号为空 或 学号不同）
+                    old_number_empty = not old_number or old_number.strip() == ""
+                    if student_number and (old_number_empty or student_number != old_number):
+                        # 检查新学号是否已被其他学生使用
+                        cursor.execute("SELECT StudentId, StudentName FROM Students WHERE StudentNumber = ? AND StudentId != ?", (student_number, student_id))
+                        conflict_record = cursor.fetchone()
+                        if conflict_record:
+                            # 存在学号冲突，废弃旧学号，以新学号为准
+                            conflict_id, conflict_name = conflict_record
+                            cursor.execute("""
+                                UPDATE Students SET
+                                    StudentNumber = NULL,
+                                    UpdatedAt = datetime('now', 'localtime')
+                                WHERE StudentId = ?
+                            """, (conflict_id,))
+                            print(f"⚠️  废弃学号: {conflict_name} | 学号 {student_number} 已被清空")
+
+                        # 更新当前学生学号
+                        cursor.execute("""
+                            UPDATE Students SET
+                                StudentNumber = ?,
+                                UpdatedAt = datetime('now', 'localtime')
+                            WHERE StudentId = ?
+                        """, (student_number, student_id))
+                        if old_number_empty:
+                            print(f"✅ 补充: {student_name} | 学号: 空 → {student_number}")
+                        else:
+                            print(f"✅ 更新: {student_name} | 学号: {old_number} → {student_number}")
+                        has_change = True
+
+                    # 检查班级是否需要更新
+                    # 条件：Excel中班级不为空，且（数据库中班级为空 或 班级不同）
+                    old_class_empty = not old_class or old_class.strip() == ""
+                    if matched_class and (old_class_empty or matched_class != old_class):
+                        cursor.execute("""
+                            UPDATE Students SET
+                                ClassName = ?,
+                                UpdatedAt = datetime('now', 'localtime')
+                            WHERE StudentId = ?
+                        """, (matched_class, student_id))
+                        if old_class_empty:
+                            print(f"✅ 补充: {student_name} | 班级: 空 → {matched_class} (自动匹配: {input_class_name})")
+                        elif input_class_name and input_class_name != matched_class:
+                            print(f"✅ 更新: {student_name} | 班级: {old_class or '空'} → {matched_class} (自动匹配: {input_class_name})")
+                        else:
+                            print(f"✅ 更新: {student_name} | 班级: {old_class or '空'} → {matched_class}")
+                        has_change = True
+
+                    if has_change:
+                        updated += 1
+                    else:
+                        print(f"⏭️  跳过: {student_name} | 信息无变化")
+                        skipped += 1
+
+                else:
+                    # 学生不存在，插入新学生
+                    # 检查学号是否已存在
+                    cursor.execute("SELECT StudentId, StudentName FROM Students WHERE StudentNumber = ?", (student_number,))
+                    number_record = cursor.fetchone()
+                    if number_record:
+                        # 存在学号冲突，废弃旧学号
+                        number_id, number_name = number_record
+                        cursor.execute("""
+                            UPDATE Students SET
+                                StudentNumber = NULL,
+                                UpdatedAt = datetime('now', 'localtime')
+                            WHERE StudentId = ?
+                        """, (number_id,))
+                        print(f"⚠️  废弃学号: {number_name} | 学号 {student_number} 已被清空")
+
+                    # 插入新学生
+                    display_class = matched_class if matched_class else "未设置"
+                    if input_class_name and matched_class and input_class_name != matched_class:
+                        print(f"➕ 新增: {student_name} | 学号: {student_number} | 班级: {matched_class} (自动匹配: {input_class_name})")
+                    else:
+                        print(f"➕ 新增: {student_name} | 学号: {student_number} | 班级: {display_class}")
+                    cursor.execute("""
+                        INSERT INTO Students (StudentNumber, StudentName, ClassName)
+                        VALUES (?, ?, ?)
+                    """, (student_number, student_name, matched_class))
+                    inserted += 1
+
+            except Exception as e:
+                failed += 1
+                print(f"❌ 处理失败 {student_name}: {e}")
+
+        conn.commit()
+        conn.close()
+        wb.close()
+
+        print(f"\n✅ 处理完成:")
+        print(f"  新增学生: {inserted} 条")
+        print(f"  更新学生: {updated} 条")
+        print(f"  跳过: {skipped} 条")
+        print(f"  失败: {failed} 条")
+
+    except Exception as e:
+        print(f"\n❌ 更新失败: {e}")
         import traceback
         traceback.print_exc()
 
@@ -838,6 +1152,9 @@ def main():
                 return
         else:
             return
+    else:
+        # 更新数据库架构
+        update_database_schema()
 
     # 主菜单
     while True:
@@ -847,11 +1164,12 @@ def main():
         print("1. 导入学生信息")
         print("2. 导入学生成绩")
         print("3. 创建考试")
-        print("4. 查询成绩")
-        print("5. 查看数据库统计")
-        print("6. 退出")
+        print("4. 更新学生信息")
+        print("5. 查询成绩")
+        print("6. 查看数据库统计")
+        print("7. 退出")
         print("=" * 50)
-        choice = input("请输入选项 (1-6): ").strip()
+        choice = input("请输入选项 (1-7): ").strip()
 
         if choice == '1':
             import_students()
@@ -860,10 +1178,12 @@ def main():
         elif choice == '3':
             create_exam()
         elif choice == '4':
-            query_scores()
+            update_students_info()
         elif choice == '5':
-            show_statistics()
+            query_scores()
         elif choice == '6':
+            show_statistics()
+        elif choice == '7':
             print("\n👋 感谢使用,再见!")
             break
         else:

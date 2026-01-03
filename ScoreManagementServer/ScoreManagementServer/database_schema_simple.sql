@@ -6,7 +6,7 @@
 -- ============================================
 CREATE TABLE Students (
     StudentId INTEGER PRIMARY KEY AUTOINCREMENT,
-    StudentNumber TEXT NOT NULL UNIQUE,       -- 学号(唯一标识)
+    StudentNumber TEXT UNIQUE,               -- 学号(唯一标识，可为空，用于学号变更时废弃旧学号)
     StudentName TEXT NOT NULL,              -- 姓名
     ClassName TEXT,                         -- 班级(可选,用于分组查询)
     Gender TEXT CHECK(Gender IN ('男', '女')), -- 性别

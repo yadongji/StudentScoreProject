@@ -210,7 +210,8 @@ def print_class_rank_summary(scores, class_name, subject_name, decline_threshold
             formatted_name = format_name(name)
             first_rank_str = str(first_rank) if first_rank else 'N/A'
             last_rank_str = str(last_rank) if last_rank else 'N/A'
-            print(f"{i:^6} {formatted_name:>9} {number:^13} +{change:^6} {first_exam:^20} {first_rank_str:^8} {last_exam:^20} {last_rank_str:^8}")
+            number_str = number or ''
+            print(f"{i:^6} {formatted_name:>9} {number_str:^13} +{change:^6} {first_exam:^20} {first_rank_str:^8} {last_exam:^20} {last_rank_str:^8}")
 
     # 只显示退步明显的学生（超过阈值）
     if declines:
@@ -224,7 +225,8 @@ def print_class_rank_summary(scores, class_name, subject_name, decline_threshold
                 formatted_name = format_name(name)
                 first_rank_str = str(first_rank) if first_rank else 'N/A'
                 last_rank_str = str(last_rank) if last_rank else 'N/A'
-                print(f"{i:^6} {formatted_name:>9} {number:^13} -{change:^6} {first_exam:^20} {first_rank_str:^8} {last_exam:^20} {last_rank_str:^8}")
+                number_str = number or ''
+                print(f"{i:^6} {formatted_name:>9} {number_str:^13} -{change:^6} {first_exam:^20} {first_rank_str:^8} {last_exam:^20} {last_rank_str:^8}")
         else:
             print(f"\n📉 没有学生退步{decline_threshold}名及以上")
 
