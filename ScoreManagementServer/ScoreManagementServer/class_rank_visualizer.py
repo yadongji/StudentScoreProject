@@ -8,6 +8,14 @@
 import sqlite3
 from datetime import datetime, timedelta
 import os
+import sys
+
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
 
 # 数据库路径 - 使用相对路径
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'StudentData.db')
@@ -132,10 +140,13 @@ def print_class_rank_summary(scores, class_name, subject_name, decline_threshold
         subject_name: 科目名称
         decline_threshold: 退步显示阈值
         rank_type: 排名类型，'class'为班级排名，'grade'为年级排名
+
+    Returns:
+        tuple: (improvements, declines, no_change) 用于后续生成Excel
     """
     if not scores:
         print(f"⚠️  {class_name}没有{subject_name}成绩记录")
-        return
+        return [], [], []
 
     rank_type_name = "年级排名" if rank_type == 'grade' else "班级排名"
 
@@ -252,6 +263,8 @@ def print_class_rank_summary(scores, class_name, subject_name, decline_threshold
         print(f"  平均退步: {avg_decline:.1f}名")
 
     print(f"{'='*102}")
+
+    return improvements, declines, no_change
 
 
 def print_class_rank_sum_trend(scores, class_name, subject_name):
@@ -383,6 +396,166 @@ def print_class_rank_sum_trend(scores, class_name, subject_name):
     print(f"{'='*100}")
 
 
+def generate_excel_report(improvements, declines, class_name, first_exam, last_exam, subject_name):
+    """生成Excel报告
+
+    Args:
+        improvements: 进步学生列表
+        declines: 退步学生列表
+        class_name: 班级名称
+        first_exam: 开始考试名称
+        last_exam: 结束考试名称
+        subject_name: 科目名称
+    """
+    if not HAS_OPENPYXL:
+        print("❌ 缺少openpyxl库，无法生成Excel文件")
+        print("请运行: pip install openpyxl")
+        return False
+
+    try:
+        # 创建工作簿
+        wb = Workbook()
+
+        # 删除默认的sheet
+        wb.remove(wb.active)
+
+        # 定义样式
+        header_font = Font(name='微软雅黑', size=11, bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        cell_alignment = Alignment(horizontal='center', vertical='center')
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # 创建进步sheet
+        if improvements:
+            ws_improve = wb.create_sheet(title='进步学生')
+            # 写入表头
+            headers = ['序号', '姓名', '学号', '进步名次', '初始考试', '初始排名', '最近考试', '最新排名']
+            for col, header in enumerate(headers, 1):
+                cell = ws_improve.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = thin_border
+
+            # 写入数据
+            for idx, student in enumerate(improvements, 2):
+                # 支持元组格式：(change, name, number, first_exam, first_rank, last_exam, last_rank)
+                if isinstance(student, tuple):
+                    change, name, number, first_exam, first_rank, last_exam, last_rank = student
+                    data = [idx - 1, name, number, change, first_exam, first_rank, last_exam, last_rank]
+                else:
+                    # 字典格式
+                    data = [
+                        idx - 1,
+                        student['name'],
+                        student['number'],
+                        student['change'],
+                        student['first_exam'],
+                        student['first_rank'],
+                        student['last_exam'],
+                        student['last_rank']
+                    ]
+                for col, value in enumerate(data, 1):
+                    cell = ws_improve.cell(row=idx, column=col, value=value)
+                    cell.alignment = cell_alignment
+                    cell.border = thin_border
+
+            # 调整列宽
+            ws_improve.column_dimensions['A'].width = 6
+            ws_improve.column_dimensions['B'].width = 10
+            ws_improve.column_dimensions['C'].width = 15
+            ws_improve.column_dimensions['D'].width = 10
+            ws_improve.column_dimensions['E'].width = 20
+            ws_improve.column_dimensions['F'].width = 10
+            ws_improve.column_dimensions['G'].width = 20
+            ws_improve.column_dimensions['H'].width = 10
+
+            # 冻结首行
+            ws_improve.freeze_panes = 'A2'
+        else:
+            ws_improve = wb.create_sheet(title='进步学生')
+            ws_improve.cell(row=1, column=1, value='无进步学生记录')
+
+        # 创建退退sheet
+        if declines:
+            ws_decline = wb.create_sheet(title='退步学生')
+            # 写入表头
+            headers = ['序号', '姓名', '学号', '退步名次', '初始考试', '初始排名', '最近考试', '最新排名']
+            for col, header in enumerate(headers, 1):
+                cell = ws_decline.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = PatternFill(start_color='C00000', end_color='C00000', fill_type='solid')
+                cell.alignment = header_alignment
+                cell.border = thin_border
+
+            # 写入数据
+            for idx, student in enumerate(declines, 2):
+                # 支持元组格式：(change, name, number, first_exam, first_rank, last_exam, last_rank)
+                if isinstance(student, tuple):
+                    change, name, number, first_exam, first_rank, last_exam, last_rank = student
+                    data = [idx - 1, name, number, change, first_exam, first_rank, last_exam, last_rank]
+                else:
+                    # 字典格式
+                    data = [
+                        idx - 1,
+                        student['name'],
+                        student['number'],
+                        student['change'],
+                        student['first_exam'],
+                        student['first_rank'],
+                        student['last_exam'],
+                        student['last_rank']
+                    ]
+                for col, value in enumerate(data, 1):
+                    cell = ws_decline.cell(row=idx, column=col, value=value)
+                    cell.alignment = cell_alignment
+                    cell.border = thin_border
+
+            # 调整列宽
+            ws_decline.column_dimensions['A'].width = 6
+            ws_decline.column_dimensions['B'].width = 10
+            ws_decline.column_dimensions['C'].width = 15
+            ws_decline.column_dimensions['D'].width = 10
+            ws_decline.column_dimensions['E'].width = 20
+            ws_decline.column_dimensions['F'].width = 10
+            ws_decline.column_dimensions['G'].width = 20
+            ws_decline.column_dimensions['H'].width = 10
+
+            # 冻结首行
+            ws_decline.freeze_panes = 'A2'
+        else:
+            ws_decline = wb.create_sheet(title='退步学生')
+            ws_decline.cell(row=1, column=1, value='无退步学生记录')
+
+        # 生成文件名：班级+开始的考试+当前的考试名字
+        filename = f"{class_name}_{first_exam}_to_{last_exam}_{subject_name}.xlsx"
+
+        # 保存到桌面
+        desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+        file_path = os.path.join(desktop, filename)
+
+        wb.save(file_path)
+        print(f"\n✅ Excel报告已生成: {file_path}")
+        print(f"  - 进步学生: {len(improvements)}人")
+        print(f"  - 退步学生: {len(declines)}人")
+
+        return True
+
+    except Exception as e:
+        print(f"\n❌ 生成Excel失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+
+
 def main():
     print("=" * 100)
     print("                              班级排名趋势分析工具")
@@ -435,8 +608,8 @@ def main():
             print(f"\n{'='*100}")
             print(f"  选择分析类型")
             print(f"{'='*100}")
-            print(f"  1. 学生个人排名变化分析（现有功能）")
-            print(f"  2. 班级学科排名总和变化分析（新功能）")
+            print(f"  1. 学生个人排名变化分析")
+            print(f"  2. 班级学科排名总和变化分析")
             print(f"{'='*100}")
 
             analysis_type_choice = input(f"\n请选择分析类型（1-2，默认1）: ").strip()
@@ -446,8 +619,7 @@ def main():
                 analysis_type = int(analysis_type_choice)
 
             if analysis_type == 2:
-                # 新功能：班级学科排名总和变化分析
-                # 直接调用，不需要选择排名类型和时间范围
+                # 班级学科排名总和变化分析
                 scores = get_class_rank_trend(conn, class_name, subject_id, None, None, 'grade')
                 print_class_rank_sum_trend(scores, class_name, subject_name)
                 continue
@@ -535,8 +707,24 @@ def main():
                 print(f"⚠️  该班级没有{subject_name}成绩记录")
                 continue
 
-            # 打印摘要
-            print_class_rank_summary(scores, class_name, subject_name, decline_threshold, rank_type)
+            # 打印摘要并获取数据
+            improvements, declines, no_change = print_class_rank_summary(scores, class_name, subject_name, decline_threshold, rank_type)
+
+            # 获取第一次和最后一次考试名称
+            sorted_scores = sorted(scores, key=lambda x: datetime.strptime(x['ExamDate'], '%Y-%m-%d'))
+            first_exam = sorted_scores[0]['ExamName'] if sorted_scores else None
+            last_exam = sorted_scores[-1]['ExamName'] if sorted_scores else None
+
+            # 询问是否生成Excel
+            if improvements or declines:
+                while True:
+                    export_choice = input(f"\n是否生成Excel报告？(y/n): ").strip().lower()
+                    if export_choice in ['y', 'n']:
+                        break
+                    print("❌ 请输入 y 或 n")
+
+                if export_choice == 'y':
+                    generate_excel_report(improvements, declines, class_name, first_exam, last_exam, subject_name)
 
             # 询问是否继续
             while True:
