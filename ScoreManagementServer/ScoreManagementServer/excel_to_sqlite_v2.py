@@ -523,12 +523,41 @@ def detect_sheet_columns(headers):
     # 4. 检测总分相关列
     for idx, header in enumerate(headers):
         if header:
-            if '总分分数' in header or '总分' == header:
-                col_map['总分_score'] = idx
-            elif '总分校名次' in header or '总分班级排名' in header:
+            # 检测总分分数列（支持多种命名方式）
+            if ('总分分数' in header or header == '总分' or header.startswith('总分') or
+                '总分成绩' in header or '总分级' == header):
+                # 确保不是排名列
+                if not ('名次' in header or '排名' in header):
+                    col_map['总分_score'] = idx
+            # 检测总分校名次/年级排名（支持多种命名方式）
+            elif ('总分校名次' in header or '总分班级排名' in header or
+                  '总分级排名' in header or '总分年级排名' in header or
+                  '总分年级名次' in header or '总分校名次' in header or
+                  '总分校排名' in header or '总分校次' in header):
                 col_map['总分_grade_rank'] = idx
-            elif '总分班名次' in header or '总分班级名次' in header:
+            # 检测总分班名次/班级排名（支持多种命名方式）
+            elif ('总分班名次' in header or '总分班级名次' in header or
+                  '总分班级排名' in header or '总分班次' in header):
                 col_map['总分_class_rank'] = idx
+
+    # 5. 检测总分的通用排名列（不带"总分"前缀的情况）
+    # 如果找到了总分分数列，在它后面查找可能的排名列
+    if '总分_score' in col_map:
+        total_score_col = col_map['总分_score']
+        # 在总分列之后5列内查找班级排名和年级排名
+        for idx in range(total_score_col + 1, min(total_score_col + 6, len(headers))):
+            header = headers[idx]
+            if header:
+                # 班级排名的多种命名方式
+                if ('班级名次' in header or '班级排名' in header or '班名次' in header or '班次' in header):
+                    if '总分_class_rank' not in col_map:
+                        col_map['总分_class_rank'] = idx
+                        # 如果还没找到年级排名，继续往后面查找
+                # 年级排名的多种命名方式（必须在班级排名之后或同一列的年级排名）
+                elif ('年级名次' in header or '年级排名' in header or '学校名次' in header or
+                      '校名次' in header or '校次' in header or '校排名' in header):
+                    if '总分_grade_rank' not in col_map:
+                        col_map['总分_grade_rank'] = idx
 
     # 5. 检测各学科成绩和排名列
     for subject_name in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']:
@@ -640,7 +669,8 @@ def import_scores():
         col_map = detect_sheet_columns(headers)
 
         print(f"\n🔍 字段映射:")
-        print(f"  {col_map}")
+        for key, idx in col_map.items():
+            print(f"  {key}: 列{idx} ({headers[idx] if idx < len(headers) else 'N/A'})")
 
         # 显示匹配模式
         if '学号' in col_map:
