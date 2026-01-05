@@ -162,7 +162,7 @@ public class NetworkService : MonoBehaviour
     /// </summary>
     public void Login(string username, string password, Action<bool, string> callback)
     {
-        DebugHelper.Log($"🔐 [NetworkService] 登录请求: 用户名={username}");
+        DebugHelper.Log($"🔐 [NetworkService] 登录请求: 手机号={username}");
         StartCoroutine(LoginCoroutine(username, password, callback));
     }
 
@@ -173,7 +173,7 @@ public class NetworkService : MonoBehaviour
         // 构建登录数据
         var loginData = new LoginRequest
         {
-            username = username,
+            phonenumber = username,
             password = password
         };
 
@@ -474,7 +474,7 @@ public class NetworkService : MonoBehaviour
     [Serializable]
     private class LoginRequest
     {
-        public string username;
+        public string phonenumber;
         public string password;
     }
 
