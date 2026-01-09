@@ -98,8 +98,21 @@ def plot_trend(scores, subject_name, student_name, show_grade_rank=True):
     # 创建图表（仅用于显示排名）
     fig, ax1 = plt.subplots(figsize=(12, 6))
 
+    # 科目颜色映射：总分-红、语文-橙、数学-黄、英语-绿、物理-青、化学-蓝、生物-紫
+    color_map = {
+        '总分': '#FF0000',      # 红
+        '语文': '#FFA500',      # 橙
+        '数学': '#FFFF00',      # 黄
+        '英语': '#00FF00',      # 绿
+        '物理': '#00FFFF',      # 青
+        '化学': '#0000FF',      # 蓝
+        '生物': '#800080',      # 紫
+    }
+
+    # 根据科目名称选择颜色
+    color = color_map.get(subject_name, '#e74c3c')  # 默认红色
+
     # 绘制年级排名折线
-    color = '#e74c3c'  # 红色
     ax1.set_xlabel('考试时间', fontsize=12)
     ax1.set_ylabel('年级排名', color=color, fontsize=12)
     line1 = ax1.plot(exam_dates, grade_ranks, 'o-', color=color, linewidth=2.5, markersize=8, label='年级排名')
@@ -360,10 +373,21 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
                 data_matrix[subject].append(999)  # 999 表示缺考
 
     # 绘制
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
-    colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c',
-             '#e67e22', '#34495e', '#7f8c8d']
+    # 科目颜色映射：总分-红、语文-橙、数学-黄、英语-绿、物理-青、化学-蓝、生物-紫
+    color_map = {
+        '总分': '#FF0000',      # 红
+        '语文': '#FFA500',      # 橙
+        '数学': '#FFFF00',      # 黄
+        '英语': '#00FF00',      # 绿
+        '物理': '#00FFFF',      # 青
+        '化学': '#0000FF',      # 蓝
+        '生物': '#800080',      # 紫
+        '政治': '#e67e22',
+        '历史': '#34495e',
+        '地理': '#7f8c8d'
+    }
 
     for i, subject in enumerate(subjects):
         if not data_matrix[subject]:
@@ -371,7 +395,7 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
 
         exam_dates = [datetime.strptime(d, '%Y-%m-%d') for d in exams]
         ranks = data_matrix[subject]
-        color = colors[i % len(colors)]
+        color = color_map.get(subject, '#95a5a6')
 
         # 只绘制有效数据（非999）
         valid_data = [(x, y) for x, y in zip(exam_dates, ranks) if y != 999]
@@ -384,6 +408,32 @@ def plot_all_subjects(conn, student_id, student_name, show_grade_rank):
             for x, y in zip(valid_dates, valid_ranks):
                 ax.text(x, y, f'#{y}',
                        ha='center', va='top', fontsize=8, color=color, fontweight='bold')
+
+            # 添加进步/退步标记
+            for j in range(1, len(valid_ranks)):
+                prev_rank = valid_ranks[j-1]
+                curr_rank = valid_ranks[j]
+                rank_change = prev_rank - curr_rank  # 正数表示进步
+
+                if rank_change > 0:
+                    change_text = f'↑+{rank_change}'
+                    change_color = 'green'
+                elif rank_change < 0:
+                    change_text = f'↓{rank_change}'
+                    change_color = 'red'
+                else:
+                    change_text = '→0'
+                    change_color = 'gray'
+
+                # 计算两个日期之间的中间点
+                date_diff = valid_dates[j] - valid_dates[j-1]
+                mid_x = valid_dates[j-1] + date_diff / 2
+                mid_y = (prev_rank + curr_rank) / 2
+
+                ax.text(mid_x, mid_y, change_text,
+                       ha='center', va='center', fontsize=9,
+                       color=change_color, fontweight='bold',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 
     # 设置x轴
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -465,12 +515,18 @@ def plot_comprehensive_view(conn, student_id, student_name):
     # 创建图表
     fig, ax = plt.subplots(figsize=(16, 9))
 
-    # 学科颜色映射
+    # 学科颜色映射：总分-红、语文-橙、数学-黄、英语-绿、物理-青、化学-蓝、生物-紫
     colors = {
-        '语文': '#e74c3c', '数学': '#3498db', '英语': '#2ecc71',
-        '物理': '#f39c12', '化学': '#9b59b6', '生物': '#1abc9c',
-        '政治': '#e67e22', '历史': '#34495e', '地理': '#7f8c8d',
-        '总分': '#c0392b'  # 总分用深红色
+        '总分': '#FF0000',      # 红
+        '语文': '#FFA500',      # 橙
+        '数学': '#FFFF00',      # 黄
+        '英语': '#00FF00',      # 绿
+        '物理': '#00FFFF',      # 青
+        '化学': '#0000FF',      # 蓝
+        '生物': '#800080',      # 紫
+        '政治': '#e67e22',
+        '历史': '#34495e',
+        '地理': '#7f8c8d'
     }
 
     # 绘制各学科排名折线
@@ -499,8 +555,8 @@ def plot_comprehensive_view(conn, student_id, student_name):
                        fontsize=9 if subject != '总分' else 10,
                        color=color, fontweight='bold')
 
-            # 总分添加变化标记
-            if subject == '总分' and len(valid_ranks) > 1:
+            # 为所有科目添加进步/退步标记（不仅仅是总分）
+            if len(valid_ranks) > 1:
                 for i in range(1, len(valid_ranks)):
                     prev_rank = valid_ranks[i-1]
                     curr_rank = valid_ranks[i]
@@ -520,9 +576,13 @@ def plot_comprehensive_view(conn, student_id, student_name):
                     mid_x = valid_dates[i-1] + date_diff / 2
                     mid_y = (prev_rank + curr_rank) / 2
 
+                    # 总分使用稍大的字体
+                    font_size = 11 if subject == '总分' else 9
+                    alpha = 0.9 if subject == '总分' else 0.8
+
                     ax.text(mid_x, mid_y, change_text, ha='center', va='center',
-                           fontsize=11, color=change_color, fontweight='bold',
-                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
+                           fontsize=font_size, color=change_color, fontweight='bold',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=alpha))
 
     # 设置y轴
     ax.set_xlabel('考试时间', fontsize=13)
