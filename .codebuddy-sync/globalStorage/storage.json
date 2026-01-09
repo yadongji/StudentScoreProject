@@ -1,0 +1,83 @@
+{
+    "telemetry.machineId": "06f81fabef62dc0e95627670732d5aba789d524008b6735f1421906cca72cb29",
+    "telemetry.sqmId": "{DC91E4C4-519A-4CE4-8E59-EB4A16C32C35}",
+    "telemetry.devDeviceId": "e6fcf988-ea24-429a-9d21-0880c3852c51",
+    "backupWorkspaces": {
+        "workspaces": [],
+        "folders": [
+            {
+                "folderUri": "file:///d%3A/StudentScoreProject"
+            }
+        ],
+        "emptyWindows": []
+    },
+    "windowControlHeight": 32,
+    "profileAssociations": {
+        "workspaces": {
+            "file:///d%3A/StudentScoreProject/ScoreManagementServer/ScoreManagementServer": "__default__profile__",
+            "file:///d%3A/StudentScoreProject": "__default__profile__"
+        },
+        "emptyWindows": {}
+    },
+    "theme": "vs-dark",
+    "themeBackground": "#1e1e2e",
+    "windowSplash": {
+        "zoomLevel": 0,
+        "baseTheme": "vs-dark",
+        "colorInfo": {
+            "foreground": "#cdd6f4",
+            "background": "#1e1e2e",
+            "editorBackground": "#1e1e2e",
+            "titleBarBackground": "#11111b",
+            "titleBarBorder": "#11111b",
+            "activityBarBackground": "#11111b",
+            "activityBarBorder": "#11111b",
+            "sideBarBackground": "#181825",
+            "sideBarBorder": "#1c1c1c",
+            "statusBarBackground": "#11111b",
+            "statusBarBorder": "#11111b",
+            "statusBarNoFolderBackground": "#11111b"
+        },
+        "layoutInfo": {
+            "sideBarSide": "left",
+            "editorPartMinWidth": 220,
+            "titleBarHeight": 32,
+            "activityBarWidth": 44,
+            "sideBarWidth": 170,
+            "auxiliarySideBarWidth": 536,
+            "statusBarHeight": 22,
+            "windowBorder": false
+        }
+    },
+    "windowsState": {
+        "lastActiveWindow": {
+            "folder": "file:///d%3A/StudentScoreProject",
+            "backupPath": "C:\\Users\\Administrator\\AppData\\Roaming\\CodeBuddy CN\\Backups\\91c22a6ffc91da7f958a3ec7b88b7350",
+            "uiState": {
+                "mode": 0,
+                "x": 360,
+                "y": 140,
+                "width": 1200,
+                "height": 800
+            }
+        },
+        "openedWindows": []
+    },
+    "genie.userId": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJteWZFenA3ODNLaV9KQ3g4Vm5jM1hfaXg2alpyYjZDZjVPTWtHWk1QSTNzIn0.eyJleHAiOjE3OTg5ODA0MjYsImlhdCI6MTc2Nzc2OTQzOCwiYXV0aF90aW1lIjoxNzY3NDQ0NDI2LCJqdGkiOiIzNDdhNmQ5OC02YjdhLTQ3ODAtYjkwNy1kYmM3OTMzODQ1MWUiLCJpc3MiOiJodHRwczovL2NvcGlsb3QudGVuY2VudC5jb20vYXV0aC9yZWFsbXMvY29waWxvdCIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiJmNTRjN2M3Yi0xYTJlLTQ5NDMtODA0My0yYjAzNTVhNmZiNGMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJjb25zb2xlIiwic2lkIjoiNTFlNTJjNTktNzUxMi00ZGI4LTgyMGQtZDhjOTIxZDI4MGJmIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgb2ZmbGluZV9hY2Nlc3MgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5pY2tuYW1lIjoi5LqR5rex5LiN55-l5aSEIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZmYxOWJhZmQtNmQzMC00YjEzLWJiZWUtNDBiNjgxZjA4ZjQ0LeS6kea3seS4jeefpeWkhCJ9.vKJAx_YGmEH2c6rGfPce2EHnITVoevILU_5spjzYM9uKu3EhfRz_aVok6lVzaoKiIUkemxwaqd1_FJV-faIfVl5M3SVIJCzsxQETKHmgKW-Gdq5PWs6N8ALjTOMFRmjdZuoFNwCyNituq3Aye1Wz4xUY7xKumReFKf79CXtCNzN6kUlMdyeuDgfULB9JA9udIcgTLbYGU1YoLFM_H7ZMcXoDT-yvhn-whaZgnqRdf-Hr3vxDUhjqB4fuv7q9PHM-5hfdD2YOTbgN0nzPLnomXWgU7V6VpAytAwXCeKFWMMGbpEGegVSXgCzSrUOldzTvxsE8-euquHc7fljqg5d31A",
+    "windowSplashWorkspaceOverride": {
+        "layoutInfo": {
+            "sideBarWidth": 170,
+            "auxiliaryBarWidth": 536,
+            "workspaces": {
+                "da4ca4a0917511b2f6aad5faea836e64": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "674fe16cf3032c8cb972acd96f4df92d": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,8 @@
+/ScoreManagementClient/ScoreManagementClient/UserSettings
+/ScoreManagementClient/ScoreManagementClient/Assembly-CSharp.csproj
+/ScoreManagementClient/ScoreManagementClient/Packages
+/ScoreManagementClient/ScoreManagementClient/ProjectSettings
+/ScoreManagementClient/ScoreManagementClient/Logs
+.codebuddycn/
+# CodeBuddy聊天记录同步文件夹
+!.codebuddy-sync/
