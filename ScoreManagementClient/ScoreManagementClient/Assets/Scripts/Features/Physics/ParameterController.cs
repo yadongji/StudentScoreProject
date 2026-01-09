@@ -183,8 +183,8 @@ namespace Features.Physics
         {
             // 计算加速度 (斜面滑块模型)
             float angleRad = _inclineAngle * Mathf.Deg2Rad;
-            float sinAngle = Mathf.Sin(angleRad);
-            float cosAngle = Mathf.Cos(angleRad);
+            float sinAngle = Mathf.Round(Mathf.Sin(angleRad) * 100f) / 100f; // 保留2位小数
+            float cosAngle = Mathf.Round(Mathf.Cos(angleRad) * 100f) / 100f; // 保留2位小数
 
             // 加速度 = g*sin(θ) - μ*g*cos(θ)
             float acceleration = _gravity * sinAngle - _currentFriction * _gravity * cosAngle;
@@ -192,14 +192,14 @@ namespace Features.Physics
 
             if (_accelerationText != null)
             {
-                _accelerationText.text = "加速度: " + acceleration.ToString("F3") + " m/s²";
+                _accelerationText.text = "加速度: " + acceleration.ToString("F2") + " m/s²";
             }
 
             // 计算理论速度（假设运行1秒）
             float theoreticalVelocity = acceleration * 1f;
             if (_theoreticalVelocityText != null)
             {
-                _theoreticalVelocityText.text = "理论速度(1s): " + theoreticalVelocity.ToString("F3") + " m/s";
+                _theoreticalVelocityText.text = "理论速度(1s): " + theoreticalVelocity.ToString("F2") + " m/s";
             }
         }
 
@@ -209,13 +209,13 @@ namespace Features.Physics
         public float CalculateTheoreticalVelocity(float time, float initialVelocity = 0f)
         {
             float angleRad = _inclineAngle * Mathf.Deg2Rad;
-            float sinAngle = Mathf.Sin(angleRad);
-            float cosAngle = Mathf.Cos(angleRad);
+            float sinAngle = Mathf.Round(Mathf.Sin(angleRad) * 100f) / 100f; // 保留2位小数
+            float cosAngle = Mathf.Round(Mathf.Cos(angleRad) * 100f) / 100f; // 保留2位小数
 
             float acceleration = _gravity * sinAngle - _currentFriction * _gravity * cosAngle;
             acceleration = Mathf.Max(0, acceleration);
 
-            return initialVelocity + acceleration * time;
+            return Mathf.Round((initialVelocity + acceleration * time) * 100f) / 100f; // 保留2位小数
         }
 
         /// <summary>
@@ -224,11 +224,11 @@ namespace Features.Physics
         public float CalculateAcceleration()
         {
             float angleRad = _inclineAngle * Mathf.Deg2Rad;
-            float sinAngle = Mathf.Sin(angleRad);
-            float cosAngle = Mathf.Cos(angleRad);
+            float sinAngle = Mathf.Round(Mathf.Sin(angleRad) * 100f) / 100f; // 保留2位小数
+            float cosAngle = Mathf.Round(Mathf.Cos(angleRad) * 100f) / 100f; // 保留2位小数
 
             float acceleration = _gravity * sinAngle - _currentFriction * _gravity * cosAngle;
-            return Mathf.Max(0, acceleration);
+            return Mathf.Round(Mathf.Max(0, acceleration) * 100f) / 100f; // 保留2位小数
         }
 
         /// <summary>

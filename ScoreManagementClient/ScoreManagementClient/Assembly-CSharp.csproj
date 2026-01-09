@@ -55,6 +55,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
     <Compile Include="Assets\StandaloneFileBrowser\Sample\CanvasSampleOpenFileText.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
+    <Compile Include="Assets\Scripts\Models\PhysicsModels.cs" />
     <Compile Include="Assets\Scripts\Utils\FontManager.cs" />
     <Compile Include="Assets\Scripts\Core\Network\INetworkService.cs" />
     <Compile Include="Assets\Scripts\Features\Physics\BeltConveyor.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_ExampleScript_01.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextConsoleSimulator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ObjectSpin.cs" />
+    <Compile Include="Assets\Scripts\Features\Physics\PhysicsObject.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextInfoDebugTool.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
     <Compile Include="Assets\Scripts\Core\Network\NetworkService.cs" />
@@ -113,6 +115,7 @@
     <Compile Include="Assets\Scripts\Features\Physics\EnergyCalculator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventHandler.cs" />
     <Compile Include="Assets\Scripts\Core\Base\LifecycleManager.cs" />
+    <Compile Include="Assets\Scripts\Features\Physics\InclineExperimentHelper.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_B.cs" />
     <Compile Include="Assets\StandaloneFileBrowser\StandaloneFileBrowserMac.cs" />
     <Compile Include="Assets\Scripts\Features\Physics\QuickTest.cs" />
@@ -131,9 +134,6 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
     <Compile Include="Assets\Scripts\Features\Game3D\Controllers\IGame3DController.cs" />
     <Compile Include="Assets\Scripts\Hotfix\IHotfixInterface.cs" />
-    <Compile Include="Assets\Scripts\Features\Physics\PhysicsObject.cs" />
-    <Compile Include="Assets\Scripts\Models\PhysicsModels.cs" />
-    <Compile Include="Assets\Scripts\Features\Physics\InclineExperimentHelper.cs" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />

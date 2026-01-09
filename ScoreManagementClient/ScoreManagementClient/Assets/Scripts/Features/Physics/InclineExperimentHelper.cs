@@ -125,7 +125,7 @@ namespace Features.Physics
             }
 
             if (_criticalFrictionText != null)
-                _criticalFrictionText.text = $"临界摩擦系数 μ = tanα\n= {criticalFriction:F3}";
+                _criticalFrictionText.text = $"临界摩擦系数 μ = tanα\n= {criticalFriction:F2}";
 
             if (_equilibriumText != null)
             {
@@ -169,7 +169,7 @@ namespace Features.Physics
         public float CalculateCriticalAngle(float frictionCoefficient)
         {
             float angleRadians = Mathf.Atan(frictionCoefficient);
-            return angleRadians * Mathf.Rad2Deg;
+            return Mathf.Round(angleRadians * Mathf.Rad2Deg * 100f) / 100f; // 保留2位小数
         }
 
         /// <summary>
@@ -236,10 +236,11 @@ namespace Features.Physics
         {
             float friction = 0.577f;
             float criticalAngle = CalculateCriticalAngle(friction);
+            float tanValue = Mathf.Round(Mathf.Tan(criticalAngle * Mathf.Deg2Rad) * 100f) / 100f; // 保留2位小数
 
             DebugHelper.Log($"📚 演示案例3：μ={friction}");
             DebugHelper.Log($"   临界角度 = atan({friction}) = {criticalAngle:F1}°");
-            DebugHelper.Log($"   tan({criticalAngle:F1}°) = {Mathf.Tan(criticalAngle * Mathf.Deg2Rad):F3}");
+            DebugHelper.Log($"   tan({criticalAngle:F1}°) = {tanValue:F2}");
             DebugHelper.Log($"   结论: 当摩擦系数为 {friction} 时，{criticalAngle:F1}° 是临界角度！");
         }
     }

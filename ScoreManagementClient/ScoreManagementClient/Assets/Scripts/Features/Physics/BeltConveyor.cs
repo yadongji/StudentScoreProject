@@ -77,18 +77,18 @@ namespace Features.Physics
         /// <summary>
         /// 重力沿传送带向下的分量（mgsinα）
         /// </summary>
-        public float GravityDownComponent => _objectMass * _gravity * Mathf.Sin(InclineAngleRadians);
+        public float GravityDownComponent => Mathf.Round(_objectMass * _gravity * Mathf.Sin(InclineAngleRadians) * 100f) / 100f;
 
         /// <summary>
         /// 重力垂直于传送带的分量（mgcosα）
         /// </summary>
-        public float GravityNormalComponent => _objectMass * _gravity * Mathf.Cos(InclineAngleRadians);
+        public float GravityNormalComponent => Mathf.Round(_objectMass * _gravity * Mathf.Cos(InclineAngleRadians) * 100f) / 100f;
 
         /// <summary>
         /// 临界摩擦系数（μ = tanα）
         /// 当摩擦系数大于此值时，物体不会滑动
         /// </summary>
-        public float CriticalFrictionCoefficient => Mathf.Tan(InclineAngleRadians);
+        public float CriticalFrictionCoefficient => Mathf.Round(Mathf.Tan(InclineAngleRadians) * 100f) / 100f;
 
         /// <summary>
         /// 计算摩擦力（μmgcosα）
@@ -311,16 +311,16 @@ namespace Features.Physics
         public void ShowPhysicsCalculations()
         {
             DebugHelper.Log("===== 传送带物理计算 =====");
-            DebugHelper.Log($"倾斜角度: {_inclineAngle:F1}° ({InclineAngleRadians:F3} 弧度)");
+            DebugHelper.Log($"倾斜角度: {_inclineAngle:F1}° ({InclineAngleRadians:F2} 弧度)");
             DebugHelper.Log($"物体质量: {_objectMass} kg");
             DebugHelper.Log($"重力加速度: {_gravity} m/s²");
             DebugHelper.Log($"--- 重力分量 ---");
-            DebugHelper.Log($"沿传送带向下的重力 (mgsinα): {GravityDownComponent:F3} N");
-            DebugHelper.Log($"垂直于传送带的重力 (mgcosα): {GravityNormalComponent:F3} N");
+            DebugHelper.Log($"沿传送带向下的重力 (mgsinα): {GravityDownComponent:F2} N");
+            DebugHelper.Log($"垂直于传送带的重力 (mgcosα): {GravityNormalComponent:F2} N");
             DebugHelper.Log($"--- 临界摩擦系数 ---");
-            DebugHelper.Log($"临界摩擦系数 (μ = tanα): {CriticalFrictionCoefficient:F3}");
-            DebugHelper.Log($"提示: 当实际摩擦系数 μ > {CriticalFrictionCoefficient:F3} 时，物体不会滑动");
-            DebugHelper.Log($"提示: 当实际摩擦系数 μ < {CriticalFrictionCoefficient:F3} 时，物体会下滑");
+            DebugHelper.Log($"临界摩擦系数 (μ = tanα): {CriticalFrictionCoefficient:F2}");
+            DebugHelper.Log($"提示: 当实际摩擦系数 μ > {CriticalFrictionCoefficient:F2} 时，物体不会滑动");
+            DebugHelper.Log($"提示: 当实际摩擦系数 μ < {CriticalFrictionCoefficient:F2} 时，物体会下滑");
             DebugHelper.Log("=====================");
         }
 
