@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace Features.Physics
 {
@@ -19,12 +20,12 @@ namespace Features.Physics
         [SerializeField] private Slider _gravitySlider;
 
         [Header("显示UI")]
-        [SerializeField] private Text _angleText;
-        [SerializeField] private Text _gravityDownText;
-        [SerializeField] private Text _gravityNormalText;
-        [SerializeField] private Text _frictionForceText;
-        [SerializeField] private Text _criticalFrictionText;
-        [SerializeField] private Text _equilibriumText;
+        [SerializeField] private TMP_Text _angleText;
+        [SerializeField] private TMP_Text _gravityDownText;
+        [SerializeField] private TMP_Text _gravityNormalText;
+        [SerializeField] private TMP_Text _frictionForceText;
+        [SerializeField] private TMP_Text _criticalFrictionText;
+        [SerializeField] private TMP_Text _equilibriumText;
 
         [Header("显示设置")]
         [SerializeField] private bool _showCalculations = true;
