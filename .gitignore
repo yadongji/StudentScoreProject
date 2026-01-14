@@ -6,3 +6,5 @@
 .codebuddycn/
 # CodeBuddy聊天记录同步文件夹
 !.codebuddy-sync/
+/ScoreManagementClient/ScoreManagementClient/Assembly-CSharp-Editor.csproj
+/ScoreManagementClient/ScoreManagementClient/obj
