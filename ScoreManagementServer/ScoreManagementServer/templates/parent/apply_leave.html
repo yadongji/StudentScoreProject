@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}申请请假 - 宿舍管理系统{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link" href="/parent">
+        <i class="bi bi-speedometer2"></i> 首页
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" href="/parent/apply_leave">
+        <i class="bi bi-calendar-plus"></i> 申请请假
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/parent/leave_history">
+        <i class="bi bi-clock-history"></i> 请假记录
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-calendar-plus"></i> 申请请假
+            <small class="text-muted">为学生提交请假申请</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark-plus"></i> 请假申请表
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="leaveForm">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person"></i> 学生ID
+                        </label>
+                        <input type="text" class="form-control" value="{{ student_id }}" disabled>
+                        <small class="text-muted">系统自动填充</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-tag"></i> 请假类型
+                        </label>
+                        <select class="form-select" name="leave_type" required>
+                            <option value="">请选择请假类型</option>
+                            <option value="病假">病假</option>
+                            <option value="事假">事假</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-chat-dots"></i> 请假原因
+                        </label>
+                        <textarea class="form-control" name="reason" rows="4" required
+                                  placeholder="请详细说明请假原因"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-calendar"></i> 开始时间
+                            </label>
+                            <input type="datetime-local" class="form-control" name="start_time" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-calendar"></i> 结束时间
+                            </label>
+                            <input type="datetime-local" class="form-control" name="end_time" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-telephone"></i> 家长联系电话
+                        </label>
+                        <input type="tel" class="form-control" name="parent_contact"
+                               placeholder="请输入家长联系电话" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="parentConfirm" checked>
+                            <label class="form-check-label" for="parentConfirm">
+                                我已确认此请假申请
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>温馨提示：</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>请至少提前1天提交请假申请</li>
+                            <li>病假需要提供医生证明</li>
+                            <li>请假申请将由班主任审批</li>
+                            <li>审批通过后，学生状态将显示为"请假不在校"</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send"></i> 提交申请
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 表单提交处理
+document.getElementById('leaveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // 获取表单数据
+    const formData = {
+        leave_type: this.leave_type.value,
+        reason: this.reason.value,
+        start_time: this.start_time.value.replace('T', ' '),
+        end_time: this.end_time.value.replace('T', ' '),
+        parent_contact: this.parent_contact.value
+    };
+
+    // 验证
+    if (!formData.leave_type || !formData.reason ||
+        !formData.start_time || !formData.end_time || !formData.parent_contact) {
+        showError('请填写所有必填项');
+        return;
+    }
+
+    // 验证时间
+    if (new Date(formData.end_time) <= new Date(formData.start_time)) {
+        showError('结束时间必须晚于开始时间');
+        return;
+    }
+
+    // 确认提交
+    confirmAction('确认提交请假申请？', function() {
+        fetch('/parent/apply_leave', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message);
+                setTimeout(() => {
+                    window.location.href = '/parent';
+                }, 1500);
+            } else {
+                showError(data.message);
+            }
+        })
+        .catch(error => {
+            showError('提交失败：' + error.message);
+        });
+    });
+});
+</script>
+{% endblock %}

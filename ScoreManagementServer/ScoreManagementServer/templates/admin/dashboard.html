@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}管理员首页 - 宿舍管理系统{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link active" href="/admin">
+        <i class="bi bi-speedometer2"></i> 首页
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/admin/dormitories">
+        <i class="bi bi-building"></i> 宿舍楼管理
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/admin/staff">
+        <i class="bi bi-people"></i> 宿管人员
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-speedometer2"></i> 系统管理员
+            <small class="text-muted">欢迎，{{ user_name }}</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-building display-4 text-primary"></i>
+                <h4 class="mt-3">宿舍楼管理</h4>
+                <p class="text-muted">管理宿舍楼信息、楼层数、床位统计</p>
+                <a href="/admin/dormitories" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> 管理
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people display-4 text-success"></i>
+                <h4 class="mt-3">宿管人员</h4>
+                <p class="text-muted">管理宿管阿姨和楼层管理员</p>
+                <a href="/admin/staff" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> 管理
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 系统说明
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>宿舍楼管理</strong>：添加、查看宿舍楼信息，包括楼层数、床位统计、入住率</li>
+                    <li><strong>宿管人员管理</strong>：添加、查看宿管阿姨和楼层管理员信息</li>
+                    <li><strong>角色说明</strong>：
+                        <ul>
+                            <li>系统管理员 - 可以管理所有宿舍楼和宿管人员</li>
+                            <li>宿管阿姨 - 负责整栋楼或指定楼层的管理</li>
+                            <li>班主任 - 查看班级出勤和审批请假</li>
+                            <li>学生家长 - 为学生申请请假</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

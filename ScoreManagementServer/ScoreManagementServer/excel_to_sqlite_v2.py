@@ -39,6 +39,7 @@ SUBJECT_IDS = {
 print("=" * 50)
 print("   高中成绩管理系统 V2.0 - Excel导入工具")
 print("=" * 50)
+print("支持格式：普通格式、方向名次格式（赋分成绩）")
 print()
 
 
@@ -489,147 +490,170 @@ def update_students_info():
         traceback.print_exc()
 
 
-def detect_sheet_columns(headers):
+def detect_sheet_columns_simple(header_row):
     """
-    智能检测Excel表的列位置
-    优先级：
-    1. 检测学号列（包含"学号"或"考号"二字）
-    2. 如果没有学号，检测姓名列（包含"姓名"二字）
-    3. 检测学科成绩列（学科名或学科名+成绩/分数）
-    4. 检测排名列（成绩列附近查找"班级排名"/"班次"/"年级排名"）
+    普通格式的列检测（单行表头）
+
+    Excel结构（普通格式）：
+    - 第1行：单行表头（如"学校"、"班级"、"学号"、"姓名"、"语文"、"语文班名次"、"语文校名次"等）
+    - 第2行开始：实际数据
+
+    规则：
+    1. 识别"学校"、"班级"、"学号"、"姓名"列
+    2. 识别各学科的分数、班名次、校名次列
     """
-    # 列索引映射（从0开始）
     col_map = {}
 
-    # 1. 优先检测学号列
-    for idx, header in enumerate(headers):
-        if header and ('学号' in header or '考号' in header):
+    # 1. 检测基础信息列（前5列）
+    for idx, header in enumerate(header_row):
+        if not header:
+            continue
+        if '学号' in header or '考号' in header:
             col_map['学号'] = idx
-            break
-
-    # 2. 如果没找到学号，检测姓名列
-    if '学号' not in col_map:
-        for idx, header in enumerate(headers):
-            if header and '姓名' in header:
-                col_map['姓名'] = idx
-                break
-
-    # 3. 检测班级列
-    for idx, header in enumerate(headers):
-        if header and '班级' in header:
+        elif '姓名' in header:
+            col_map['姓名'] = idx
+        elif '班级' in header:
             col_map['班级'] = idx
-            break
+        elif '学校' in header:
+            col_map['学校'] = idx
 
-    # 4. 检测总分相关列
-    for idx, header in enumerate(headers):
-        if header:
-            # 检测总分分数列（支持多种命名方式）
-            if ('总分分数' in header or header == '总分' or header.startswith('总分') or
-                '总分成绩' in header or '总分级' == header):
-                # 确保不是排名列
-                if not ('名次' in header or '排名' in header):
-                    col_map['总分_score'] = idx
-            # 检测总分校名次/年级排名（支持多种命名方式）
-            elif ('总分校名次' in header or '总分班级排名' in header or
-                  '总分级排名' in header or '总分年级排名' in header or
-                  '总分年级名次' in header or '总分校名次' in header or
-                  '总分校排名' in header or '总分校次' in header):
-                col_map['总分_grade_rank'] = idx
-            # 检测总分班名次/班级排名（支持多种命名方式）
-            elif ('总分班名次' in header or '总分班级名次' in header or
-                  '总分班级排名' in header or '总分班次' in header):
-                col_map['总分_class_rank'] = idx
+    # 2. 检测各学科列
+    subjects = ['总分', '语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']
+    for idx, header in enumerate(header_row):
+        if not header:
+            continue
 
-    # 5. 检测总分的通用排名列（不带"总分"前缀的情况）
-    # 如果找到了总分分数列，在它后面查找可能的排名列
-    if '总分_score' in col_map:
-        total_score_col = col_map['总分_score']
-        # 在总分列之后5列内查找班级排名和年级排名
-        for idx in range(total_score_col + 1, min(total_score_col + 6, len(headers))):
-            header = headers[idx]
-            if header:
-                # 班级排名的多种命名方式
-                if ('班级名次' in header or '班级排名' in header or '班名次' in header or '班次' in header):
-                    if '总分_class_rank' not in col_map:
-                        col_map['总分_class_rank'] = idx
-                        # 如果还没找到年级排名，继续往后面查找
-                # 年级排名的多种命名方式（必须在班级排名之后或同一列的年级排名）
-                elif ('年级名次' in header or '年级排名' in header or '学校名次' in header or
-                      '校名次' in header or '校次' in header or '校排名' in header):
-                    if '总分_grade_rank' not in col_map:
-                        col_map['总分_grade_rank'] = idx
-
-    # 5. 检测各学科成绩和排名列
-    for subject_name in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']:
-        # 成绩列：支持 "学科名", "学科名成绩", "学科名分数"
-        score_col = None
-        for idx, header in enumerate(headers):
-            if header:
-                if (header == subject_name or
-                    f'{subject_name}成绩' in header or
-                    f'{subject_name}分数' in header):
-                    col_map[f'{subject_name}_score'] = idx
-                    score_col = idx
-                    break
-
-        # 班级排名列：成绩列后查找 "班名次", "班级名次", "班级排名", "班次"
-        if score_col is not None:
-            # 优先查找带学科前缀的排名列
-            class_rank_col = None
-            for idx in range(score_col + 1, min(score_col + 3, len(headers))):
-                header = headers[idx]
-                if header and (f'{subject_name}班名次' in header or
-                              f'{subject_name}班级名次' in header or
-                              f'{subject_name}班级排名' in header):
-                    col_map[f'{subject_name}_class_rank'] = idx
-                    class_rank_col = idx
-                    break
-
-            # 如果没找到带学科前缀的，查找通用的"班次"、"班级排名"等
-            if class_rank_col is None:
-                for idx in range(score_col + 1, min(score_col + 3, len(headers))):
-                    header = headers[idx]
-                    if header and ('班次' in header or '班级排名' in header or '班级名次' in header):
-                        col_map[f'{subject_name}_class_rank'] = idx
-                        break
-
-        # 年级/学校排名列：成绩列后查找 "年级名次", "年级排名", "校名次", "校次"
-        if score_col is not None:
-            # 优先查找带学科前缀的排名列
-            for idx in range(score_col + 1, min(score_col + 5, len(headers))):
-                header = headers[idx]
-                if header and (f'{subject_name}年级名次' in header or
-                              f'{subject_name}年级排名' in header or
-                              f'{subject_name}校名次' in header or
-                              f'{subject_name}校次' in header):
-                    col_map[f'{subject_name}_grade_rank'] = idx
-                    break
-
-            # 如果没找到带学科前缀的，查找通用的"年级排名"、"年级名次"、"校名次"、"校次"等
-            # 注意：需要判断是否已被其他学科占用
-            found = False
-            for idx in range(score_col + 1, min(score_col + 5, len(headers))):
-                header = headers[idx]
-                if header and ('年级排名' in header or '年级名次' in header or '校名次' in header or '校次' in header):
-                    # 检查该列是否已被分配给其他学科
-                    is_assigned = any(f'{subj}_grade_rank' in col_map and col_map[f'{subj}_grade_rank'] == idx
-                                    for subj in ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理'])
-                    if not is_assigned:
-                        col_map[f'{subject_name}_grade_rank'] = idx
-                        found = True
-                        break
-                elif found:
-                    break
+        # 检查是否是某个学科的列
+        for subject in subjects:
+            if subject in header:
+                # 判断具体是什么类型的列
+                if '分数' in header or '成绩' in header or header == subject:
+                    col_map[f'{subject}_score'] = idx
+                elif '班名次' in header:
+                    col_map[f'{subject}_class_rank'] = idx
+                elif '校名次' in header or '年级名次' in header:
+                    col_map[f'{subject}_grade_rank'] = idx
+                break
 
     return col_map
 
 
+def detect_sheet_columns_v2(row3_values, row4_values):
+    """
+    智能检测Excel表的列位置（V2版本 - 支持方向名次格式）
+
+    Excel结构（方向名次格式）：
+    - 第3行：学科名称（如"学校"、"班级"、"考号"、"姓名"、"选科"、"总分(物理)(赋分)"、"化学(赋分)"）
+    - 第4行：字段类型（如"分数"、"方向全体名次"、"方向校名次"、"方向班名次"）
+    - 每个学科占4列：分数、方向全体名次、方向校名次、方向班名次
+
+    规则：
+    1. 识别"学校"、"班级"、"考号"、"姓名"、"选科"列
+    2. 对于每个学科：
+       - 如果存在带"(赋分)"的版本，选择带"(赋分)"的
+       - 如果只有不带"(赋分)"的版本，选择这个版本
+       - 映射"方向校名次"→grade_rank，"方向班名次"→class_rank
+    """
+    col_map = {}
+
+    # 1. 检测基础信息列（前5列）
+    for idx in range(5):
+        header = row3_values[idx] if idx < len(row3_values) else ''
+        if header:
+            if '学号' in header or '考号' in header:
+                col_map['学号'] = idx
+            elif '姓名' in header:
+                col_map['姓名'] = idx
+            elif '班级' in header:
+                col_map['班级'] = idx
+            elif '学校' in header:
+                col_map['学校'] = idx
+
+    # 2. 第一步：扫描所有学科，记录每个学科的版本（带/不带赋分）
+    print("  正在分析学科结构...")
+
+    subjects_info = {}  # {学科名: {'scored': [列索引], 'normal': [列索引]}}
+    col_index = 5  # 从第6列开始（索引5）
+
+    while col_index < len(row3_values):
+        row3_val = row3_values[col_index]
+
+        # 如果第3行有值，且不是基础字段，则是学科名
+        if row3_val and row3_val not in ['学校', '班级', '考号', '姓名', '选科', '']:
+            subject_name_full = row3_val
+
+            # 提取纯学科名（优先匹配"总分"）
+            subject_name = None
+            for subj in ['总分', '语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']:
+                if subj in subject_name_full:
+                    subject_name = subj
+                    break
+
+            if not subject_name:
+                col_index += 1
+                continue
+
+            # 查找该学科的列范围
+            end_col = col_index
+            while end_col < len(row3_values):
+                if end_col > col_index and row3_values[end_col] and row3_values[end_col] not in ['', None]:
+                    # 遇到新学科
+                    break
+                end_col += 1
+
+            # 记录学科信息
+            if subject_name not in subjects_info:
+                subjects_info[subject_name] = {'scored': [], 'normal': []}
+
+            # 判断是否为赋分版本
+            if '(赋分)' in subject_name_full:
+                subjects_info[subject_name]['scored'].extend(range(col_index, end_col))
+                print(f"  发现{subject_name}(赋分)版本: 列{col_index+1}-{end_col}")
+            else:
+                subjects_info[subject_name]['normal'].extend(range(col_index, end_col))
+                print(f"  发现{subject_name}普通版本: 列{col_index+1}-{end_col}")
+
+            col_index = end_col
+        else:
+            col_index += 1
+
+    # 3. 第二步：对于每个学科，选择合适的版本
+    print("\n  正在选择学科版本...")
+    for subject_name, versions in subjects_info.items():
+        if versions['scored']:
+            # 优先选择带赋分的版本
+            cols = versions['scored']
+            print(f"  选择{subject_name}(赋分)版本")
+        elif versions['normal']:
+            # 没有赋分版本，选择普通版本
+            cols = versions['normal']
+            print(f"  选择{subject_name}普通版本")
+        else:
+            continue
+
+        # 分析这几列，提取字段映射
+        for k in cols:
+            row4_val = row4_values[k] if k < len(row4_values) else ''
+
+            if row4_val == '分数':
+                col_map[f'{subject_name}_score'] = k
+                print(f"    找到{subject_name}分数列: 列{k+1}")
+            elif '方向校名次' in row4_val:
+                col_map[f'{subject_name}_grade_rank'] = k
+                print(f"    找到{subject_name}方向校名次: 列{k+1}")
+            elif '方向班名次' in row4_val:
+                col_map[f'{subject_name}_class_rank'] = k
+                print(f"    找到{subject_name}方向班名次: 列{k+1}")
+
+    return col_map, True  # 总是返回True，因为这是方向名次格式
+
+
 def import_scores():
-    """导入学生成绩"""
+    """导入学生成绩（支持普通格式和方向名次格式）"""
     print("\n📊 导入学生成绩")
     print("-" * 50)
 
-    file_path = input("请输入Excel文件路径 (如: 107班物化生成绩.xlsx): ").strip()
+    file_path = input("请输入Excel文件路径 (如: 107班物化生成绩.xlsx 或 107_学生成绩(方向名次).xlsx): ").strip()
 
     if not os.path.exists(file_path):
         print("❌ 文件不存在!")
@@ -641,7 +665,7 @@ def import_scores():
         return
     exam_id = int(exam_id)
 
-    print("\n⏳ 正在导入...")
+    print("\n⏳ 正在分析Excel文件...")
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -654,23 +678,54 @@ def import_scores():
             conn.close()
             return
 
-        wb = load_workbook(filename=file_path, read_only=True)
+        wb = load_workbook(filename=file_path)  # 不使用 read_only 模式
+        print(f"  工作表数量: {len(wb.sheetnames)}")
+        print(f"  工作表名称: {wb.sheetnames}")
         ws = wb.active
+        print(f"  当前工作表: {ws.title}")
+        print(f"  当前工作表尺寸: {ws.max_row}行 x {ws.max_column}列")
 
-        # 读取表头
-        headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+        # 读取第1-4行的信息（方向名次格式使用）
+        row1_values = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+        row2_values = [str(cell.value).strip() if cell.value else "" for cell in ws[2]]
+        row3_values = [str(cell.value).strip() if cell.value else "" for cell in ws[3]]
+        row4_values = [str(cell.value).strip() if cell.value else "" for cell in ws[4]]
+
+        # 检测是否为方向名次格式
+        is_direction_format = False
+        for header in row3_values:
+            if header and ('(赋分)' in header or '方向校名次' in header or '方向班名次' in header):
+                is_direction_format = True
+                break
+
+        # 根据格式确定数据起始行
+        if is_direction_format:
+            data_start_row = 6  # 方向名次格式：第1行考试名，第2行空，第3行学科名，第4行字段类型，第5行空，第6行开始数据
+            header_row = row3_values  # 使用第3行作为表头
+        else:
+            data_start_row = 2  # 普通格式从第2行开始
+            header_row = row1_values  # 使用第1行作为表头
 
         print(f"\n📋 Excel文件信息:")
         print(f"  总行数: {ws.max_row}")
         print(f"  总列数: {ws.max_column}")
-        print(f"  表头列: {headers}")
+        print(f"  表头列: {header_row}")
+        print(f"  数据从第{data_start_row}行开始")
 
-        # 使用智能列检测
-        col_map = detect_sheet_columns(headers)
+        if is_direction_format:
+            print(f"  考试名称(第1行): {row1_values[0] if row1_values else 'N/A'}")
+            print("\n✅ 检测到方向名次格式（赋分成绩）")
+            # 使用V2版本的智能列检测（使用第3行和第4行）
+            col_map, is_direction = detect_sheet_columns_v2(row3_values, row4_values)
+        else:
+            print("\n✅ 检测到普通格式")
+            # 使用普通格式的列检测（使用第1行作为表头）
+            col_map = detect_sheet_columns_simple(header_row)
+            is_direction = False  # 普通格式不是方向格式
 
         print(f"\n🔍 字段映射:")
         for key, idx in col_map.items():
-            print(f"  {key}: 列{idx} ({headers[idx] if idx < len(headers) else 'N/A'})")
+            print(f"  {key}: 列{idx} ({header_row[idx] if idx < len(header_row) else 'N/A'})")
 
         # 显示匹配模式
         if '学号' in col_map:
@@ -705,7 +760,7 @@ def import_scores():
 
         print(f"\n开始处理数据...")
 
-        for row in ws.iter_rows(min_row=2):
+        for row in ws.iter_rows(min_row=data_start_row):
             processed += 1
 
             student_id = None
@@ -718,26 +773,76 @@ def import_scores():
                 class_cell = row[col_map['班级']]
                 class_name = str(class_cell.value).strip() if class_cell and class_cell.value else ""
 
-            # 优先使用学号，如果没有则使用姓名查找
+            # 优先使用学号（包括"考号"），如果没有则使用姓名查找
             if has_student_number:
                 # 读取学号
                 student_number_cell = row[col_map.get('学号', 0)]
                 student_number = str(student_number_cell.value).strip() if student_number_cell and student_number_cell.value else ""
 
-                if student_number and student_number != "None":
+                # 在方向名次格式中，如果学号为空或不存在，可以尝试用姓名查找
+                use_name_fallback = is_direction and (not student_number or student_number == "None")
+
+                if student_number and student_number != "None" and not use_name_fallback:
                     # 根据学号查找
                     cursor.execute("SELECT StudentId, StudentName FROM Students WHERE StudentNumber = ?", (student_number,))
                     student = cursor.fetchone()
                     if student:
                         student_id, student_name = student
                     else:
-                        print(f"⚠️  第{processed}行: 学号 '{student_number}' 不存在,跳过")
+                        if is_direction:
+                            # 方向名次格式：学号找不到，尝试用姓名查找
+                            if '姓名' in col_map:
+                                name_cell = row[col_map['姓名']]
+                                student_name = str(name_cell.value).strip() if name_cell and name_cell.value else ""
+                                if student_name and student_name != "None":
+                                    cursor.execute("SELECT StudentId, StudentNumber FROM Students WHERE StudentName = ?", (student_name,))
+                                    students = cursor.fetchall()
+                                    if len(students) == 1:
+                                        student_id, student_number = students[0]
+                                    elif len(students) > 1:
+                                        print(f"⚠️  第{processed}行: 姓名为 '{student_name}' 的学生有{len(students)}个,使用第一个")
+                                        student_id, student_number = students[0]
+                                    else:
+                                        print(f"⚠️  第{processed}行: 学号 '{student_number}' 和姓名 '{student_name}' 都不存在,跳过")
+                                        failed += 1
+                                        continue
+                                else:
+                                    print(f"⚠️  第{processed}行: 学号 '{student_number}' 不存在且无姓名,跳过")
+                                    failed += 1
+                                    continue
+                            else:
+                                print(f"⚠️  第{processed}行: 学号 '{student_number}' 不存在,跳过")
+                                failed += 1
+                                continue
+                        else:
+                            print(f"⚠️  第{processed}行: 学号 '{student_number}' 不存在,跳过")
+                            failed += 1
+                            continue
+                else:
+                    if is_direction and '姓名' in col_map:
+                        # 方向名次格式：学号为空，用姓名查找
+                        name_cell = row[col_map['姓名']]
+                        student_name = str(name_cell.value).strip() if name_cell and name_cell.value else ""
+                        if student_name and student_name != "None":
+                            cursor.execute("SELECT StudentId, StudentNumber FROM Students WHERE StudentName = ?", (student_name,))
+                            students = cursor.fetchall()
+                            if len(students) == 0:
+                                print(f"⚠️  第{processed}行: 未找到姓名为 '{student_name}' 的学生,跳过")
+                                failed += 1
+                                continue
+                            elif len(students) > 1:
+                                print(f"⚠️  第{processed}行: 姓名为 '{student_name}' 的学生有{len(students)}个,使用第一个")
+                                student_id, student_number = students[0]
+                            else:
+                                student_id, student_number = students[0]
+                        else:
+                            print(f"⚠️  第{processed}行: 学号为空且无姓名,跳过")
+                            failed += 1
+                            continue
+                    else:
+                        print(f"⚠️  第{processed}行: 学号为空,跳过")
                         failed += 1
                         continue
-                else:
-                    print(f"⚠️  第{processed}行: 学号为空,跳过")
-                    failed += 1
-                    continue
             else:
                 # 没有学号列，使用姓名查找
                 if '姓名' in col_map:

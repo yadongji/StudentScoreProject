@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - 宿舍管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header text-center py-4">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-lock"></i> 用户登录
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person"></i> 用户名
+                        </label>
+                        <input type="text" class="form-control" name="username" required
+                               placeholder="请输入用户名">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-key"></i> 密码
+                        </label>
+                        <input type="password" class="form-control" name="password" required
+                               placeholder="请输入密码">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person-badge"></i> 角色选择
+                        </label>
+                        <select class="form-select" name="role" required>
+                            <option value="">请选择角色</option>
+                            <option value="admin">系统管理员</option>
+                            <option value="staff">宿管阿姨</option>
+                            <option value="teacher">班主任</option>
+                            <option value="parent">学生家长</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right"></i> 登录
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center text-muted">
+                    <small>💡 提示：演示版本，任意用户名密码均可登录</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-info-circle"></i> 系统功能
+                </h6>
+                <ul class="mb-0 small text-muted">
+                    <li>🏫 系统管理员 - 管理宿舍楼和宿管人员</li>
+                    <li>👩‍🏫 宿管阿姨 - 查看查寝情况，记录查寝</li>
+                    <li>👨‍🏫 班主任 - 查看班级出勤，审批请假</li>
+                    <li>👨‍👩 学生家长 - 为学生申请请假</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}家长首页 - 宿舍管理系统{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link active" href="/parent">
+        <i class="bi bi-speedometer2"></i> 首页
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/parent/apply_leave">
+        <i class="bi bi-calendar-plus"></i> 申请请假
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/parent/leave_history">
+        <i class="bi bi-clock-history"></i> 请假记录
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-speedometer2"></i> 家长
+            <small class="text-muted">{{ user_name }}</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-circle"></i> 学生信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>姓名：</strong> {{ student.StudentName }}</p>
+                        <p><strong>学号：</strong> {{ student.StudentNumber }}</p>
+                        <p><strong>班级：</strong> {{ student.ClassName }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>宿舍：</strong> {{ student.DormitoryName or '未分配' }}</p>
+                        <p><strong>房间：</strong> {{ student.RoomNumber or '未分配' }}</p>
+                        <p><strong>床位：</strong> {{ student.BedNumber or '未分配' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clipboard-check"></i> 今日出勤
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if checkin %}
+                    <p>
+                        查寝状态：
+                        <span class="status-badge status-present">
+                            {{ checkin.Status }}
+                        </span>
+                    </p>
+                {% else %}
+                    <p class="text-muted">今日尚未查寝</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> 最近请假记录
+                </h5>
+                <a href="/parent/leave_history" class="btn btn-primary btn-sm">
+                    <i class="bi bi-list"></i> 全部记录
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_leaves %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>类型</th>
+                                <th>原因</th>
+                                <th>时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in recent_leaves %}
+                            <tr>
+                                <td>{{ leave.LeaveType }}</td>
+                                <td>{{ leave.Reason }}</td>
+                                <td>
+                                    {{ leave.StartTime }}<br>
+                                    至<br>
+                                    {{ leave.EndTime }}
+                                </td>
+                                <td>
+                                    <span class="badge
+                                        {% if leave.ApprovalStatus == '已通过' %}bg-success
+                                        {% elif leave.ApprovalStatus == '已拒绝' %}bg-danger
+                                        {% else %}bg-warning{% endif %}">
+                                        {{ leave.ApprovalStatus }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">暂无请假记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>需要为孩子请假？</h5>
+                <p class="text-muted">点击下方按钮为孩子提交请假申请</p>
+                <a href="/parent/apply_leave" class="btn btn-primary btn-lg">
+                    <i class="bi bi-calendar-plus"></i> 申请请假
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

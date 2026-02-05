@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}查寝记录 - 宿舍管理系统{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link" href="/staff">
+        <i class="bi bi-speedometer2"></i> 首页
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" href="/staff/checkin">
+        <i class="bi bi-clipboard-check"></i> 查寝记录
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-clipboard-check"></i> 查寝记录
+            <small class="text-muted">日期: {{ date }}</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">选择日期</label>
+                        <input type="date" class="form-control" id="checkinDate" value="{{ date }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">查寝时间</label>
+                        <input type="time" class="form-control" id="checkinTime" value="22:00">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-primary" onclick="loadCheckInData()">
+                            <i class="bi bi-search"></i> 加载数据
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="roomsContainer">
+    {% for room in rooms %}
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-door-open"></i> {{ room.FloorNumber }}楼 {{ room.RoomNumber }}室
+                <span class="badge bg-info">{{ room.OccupiedCount or 0 }}/{{ room.BedCount }}</span>
+            </h5>
+            {% if room.StudentNames %}
+            <small class="text-muted">
+                <i class="bi bi-people"></i> {{ room.StudentNames }}
+            </small>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-2">👥 学生：</p>
+            <div class="student-list" data-room-id="{{ room.RoomId }}">
+                <!-- 学生数据将通过JavaScript加载 -->
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5>状态说明</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="status-badge status-present">在寝</span>
+                        <small class="text-muted">正常就寝</small>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="status-badge status-absent">未归</span>
+                        <small class="text-muted">未按时归寝</small>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="status-badge status-leave">请假</span>
+                        <small class="text-muted">已批准请假</small>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="status-badge status-late">晚归</span>
+                        <small class="text-muted">晚归</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 查寝记录数据
+const checkinData = {};
+const checkins = {{ checkins | tojson }};
+
+// 加载查寝数据
+function loadCheckInData() {
+    const date = document.getElementById('checkinDate').value;
+    const time = document.getElementById('checkinTime').value;
+    
+    // 根据选择加载对应日期的数据
+    window.location.href = `/staff/checkin?date=${date}`;
+}
+
+// 初始化页面
+function initPage() {
+    // 为每个房间加载学生数据
+    document.querySelectorAll('.student-list').forEach(container => {
+        const roomId = container.dataset.roomId;
+        loadRoomStudents(roomId, container);
+    });
+}
+
+// 加载房间学生
+function loadRoomStudents(roomId, container) {
+    // 这里需要从后端API获取学生数据
+    // 暂时使用模拟数据
+    const students = [
+        { id: 1, name: '张三', number: '2024001' },
+        { id: 2, name: '李四', number: '2024002' },
+        { id: 3, name: '王五', number: '2024003' },
+        { id: 4, name: '赵六', number: '2024004' }
+    ];
+
+    let html = '<div class="row">';
+    students.forEach((student, index) => {
+        const key = `${roomId}_${student.id}`;
+        const existing = checkins[key];
+        const status = existing ? existing.Status : '';
+
+        html += `
+        <div class="col-md-6 mb-2">
+            <div class="p-3 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${student.name}</strong>
+                        <br>
+                        <small class="text-muted">${student.number}</small>
+                    </div>
+                    <select class="form-select form-select-sm status-select"
+                            data-student-id="${student.id}"
+                            data-room-id="${roomId}"
+                            data-room-number="${roomId}"
+                            style="width: 120px;">
+                        <option value="">选择状态</option>
+                        <option value="在寝" ${status === '在寝' ? 'selected' : ''}>在寝</option>
+                        <option value="未归" ${status === '未归' ? 'selected' : ''}>未归</option>
+                        <option value="请假" ${status === '请假' ? 'selected' : ''}>请假</option>
+                        <option value="外出" ${status === '外出' ? 'selected' : ''}>外出</option>
+                        <option value="晚归" ${status === '晚归' ? 'selected' : ''}>晚归</option>
+                    </select>
+                </div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 提交查寝记录
+function submitCheckIn() {
+    const date = document.getElementById('checkinDate').value;
+    const time = document.getElementById('checkinTime').value;
+    const records = [];
+
+    document.querySelectorAll('.status-select').forEach(select => {
+        const status = select.value;
+        if (status) {
+            records.push({
+                student_id: select.dataset.studentId,
+                room_id: select.dataset.roomId,
+                dormitory_id: 1, // 需要从session获取
+                date: date,
+                time: time,
+                status: status,
+                remarks: ''
+            });
+        }
+    });
+
+    if (records.length === 0) {
+        showError('请至少选择一个学生的状态');
+        return;
+    }
+
+    fetch('/api/staff/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: records })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        showError('提交失败：' + error.message);
+    });
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', initPage);
+</script>
+{% endblock %}

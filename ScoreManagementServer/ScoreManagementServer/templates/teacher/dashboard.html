@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}班主任首页 - 宿舍管理系统{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link active" href="/teacher">
+        <i class="bi bi-speedometer2"></i> 首页
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/teacher/attendance">
+        <i class="bi bi-clipboard-data"></i> 班级出勤
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/teacher/leaves">
+        <i class="bi bi-calendar-check"></i> 请假审批
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-speedometer2"></i> 班主任
+            <small class="text-muted">{{ class_name }} - {{ user_name }}</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people display-4 text-primary"></i>
+                <h3 class="mt-2">{{ stats.TotalStudents or 0 }}</h3>
+                <p class="text-muted mb-0">总人数</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle display-4 text-success"></i>
+                <h3 class="mt-2">{{ stats.PresentCount or 0 }}</h3>
+                <p class="text-muted mb-0">在校</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-x display-4 text-warning"></i>
+                <h3 class="mt-2">{{ stats.LeaveCount or 0 }}</h3>
+                <p class="text-muted mb-0">请假</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clipboard-data"></i> 快捷操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/teacher/attendance" class="btn btn-primary">
+                        <i class="bi bi-clipboard-data"></i> 查看班级出勤
+                    </a>
+                    <a href="/teacher/leaves" class="btn btn-success">
+                        <i class="bi bi-calendar-check"></i> 审批请假申请
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 今日概况
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>班级总人数：<strong>{{ stats.TotalStudents or 0 }}</strong></li>
+                    <li>在校人数：<strong>{{ stats.PresentCount or 0 }}</strong></li>
+                    <li>请假人数：<strong>{{ stats.LeaveCount or 0 }}</strong></li>
+                    <li>未查寝人数：<strong>{{ stats.NoCheckInCount or 0 }}</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
