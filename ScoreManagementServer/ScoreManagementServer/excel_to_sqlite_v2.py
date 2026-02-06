@@ -504,35 +504,83 @@ def detect_sheet_columns_simple(header_row):
     """
     col_map = {}
 
-    # 1. 检测基础信息列（前5列）
+    # 1. 检测基础信息列（前5列）- 优先精确匹配完整字段名
     for idx, header in enumerate(header_row):
         if not header:
             continue
-        if '学号' in header or '考号' in header:
+        # 优先精确匹配完整字段名（避免被复合字段名误匹配）
+        if header == '学号' or header == '考号':
             col_map['学号'] = idx
-        elif '姓名' in header:
+        elif header == '姓名':
             col_map['姓名'] = idx
-        elif '班级' in header:
+        elif header == '班级':
             col_map['班级'] = idx
-        elif '学校' in header:
+        elif header == '学校':
             col_map['学校'] = idx
 
-    # 2. 检测各学科列
+    # 2. 如果精确匹配失败，使用包含匹配（向后兼容）
+    if '学号' not in col_map:
+        for idx, header in enumerate(header_row):
+            if header and ('学号' in header or '考号' in header):
+                col_map['学号'] = idx
+                break
+    if '姓名' not in col_map:
+        for idx, header in enumerate(header_row):
+            if header and '姓名' == header:  # 只精确匹配
+                col_map['姓名'] = idx
+                break
+    if '班级' not in col_map:
+        for idx, header in enumerate(header_row):
+            if header and '班级' == header:  # 只精确匹配
+                col_map['班级'] = idx
+                break
+    if '学校' not in col_map:
+        for idx, header in enumerate(header_row):
+            if header and '学校' == header:  # 只精确匹配
+                col_map['学校'] = idx
+                break
+
+    # 2. 检测各学科列 - 使用相邻列判断
     subjects = ['总分', '语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理']
+
+    # 第一步：找到所有学科的成绩列
+    subject_score_cols = {}  # {学科名: 成绩列索引}
     for idx, header in enumerate(header_row):
         if not header:
             continue
 
-        # 检查是否是某个学科的列
         for subject in subjects:
-            if subject in header:
-                # 判断具体是什么类型的列
-                if '分数' in header or '成绩' in header or header == subject:
-                    col_map[f'{subject}_score'] = idx
-                elif '班名次' in header:
-                    col_map[f'{subject}_class_rank'] = idx
-                elif '校名次' in header or '年级名次' in header:
-                    col_map[f'{subject}_grade_rank'] = idx
+            # 精确匹配或包含学科名
+            if header == subject or (subject in header and not ('班次' in header or '校次' in header or '名次' in header or '排名' in header)):
+                subject_score_cols[subject] = idx
+                col_map[f'{subject}_score'] = idx
+                break
+
+    # 第二步：基于成绩列位置，查找相邻的"班次"和"校次"列
+    for subject, score_col in subject_score_cols.items():
+        # 查找成绩列后面的"班次"和"校次"
+        # 格式：成绩列, 班次, 校次
+        for offset in range(1, 4):  # 检查后面3列
+            col_idx = score_col + offset
+            if col_idx >= len(header_row):
+                break
+
+            header = header_row[col_idx]
+            if not header:
+                continue
+
+            # 判断是否为班次列（支持多种变体）
+            if header == '班次' or header == '班级名次' or header == '班级排名':
+                if f'{subject}_class_rank' not in col_map:
+                    col_map[f'{subject}_class_rank'] = col_idx
+
+            # 判断是否为校次列（支持多种变体）
+            elif header == '校次' or header == '校名次' or header == '学校名次' or header == '年级名次' or header == '年级排名':
+                if f'{subject}_grade_rank' not in col_map:
+                    col_map[f'{subject}_grade_rank'] = col_idx
+
+            # 遇到新的学科列就停止
+            if header in subjects:
                 break
 
     return col_map
@@ -556,17 +604,27 @@ def detect_sheet_columns_v2(row3_values, row4_values):
     """
     col_map = {}
 
-    # 1. 检测基础信息列（前5列）
+    # 1. 检测基础信息列（前5列）- 优先精确匹配
     for idx in range(5):
         header = row3_values[idx] if idx < len(row3_values) else ''
         if header:
-            if '学号' in header or '考号' in header:
+            # 优先精确匹配完整字段名
+            if header == '学号' or header == '考号':
                 col_map['学号'] = idx
-            elif '姓名' in header:
+            elif header == '姓名':
                 col_map['姓名'] = idx
-            elif '班级' in header:
+            elif header == '班级':
                 col_map['班级'] = idx
-            elif '学校' in header:
+            elif header == '学校':
+                col_map['学校'] = idx
+            # 如果精确匹配失败，使用包含匹配（向后兼容）
+            elif ('学号' in header or '考号' in header) and '学号' not in col_map:
+                col_map['学号'] = idx
+            elif header == '姓名' and '姓名' not in col_map:
+                col_map['姓名'] = idx
+            elif header == '班级' and '班级' not in col_map:
+                col_map['班级'] = idx
+            elif header == '学校' and '学校' not in col_map:
                 col_map['学校'] = idx
 
     # 2. 第一步：扫描所有学科，记录每个学科的版本（带/不带赋分）
@@ -638,12 +696,12 @@ def detect_sheet_columns_v2(row3_values, row4_values):
             if row4_val == '分数':
                 col_map[f'{subject_name}_score'] = k
                 print(f"    找到{subject_name}分数列: 列{k+1}")
-            elif '方向校名次' in row4_val:
+            elif '方向校名次' in row4_val or '校名次' in row4_val or '校次' in row4_val:
                 col_map[f'{subject_name}_grade_rank'] = k
-                print(f"    找到{subject_name}方向校名次: 列{k+1}")
-            elif '方向班名次' in row4_val:
+                print(f"    找到{subject_name}方向校名次/校次: 列{k+1}")
+            elif '方向班名次' in row4_val or '班名次' in row4_val or '班次' in row4_val:
                 col_map[f'{subject_name}_class_rank'] = k
-                print(f"    找到{subject_name}方向班名次: 列{k+1}")
+                print(f"    找到{subject_name}方向班名次/班次: 列{k+1}")
 
     return col_map, True  # 总是返回True，因为这是方向名次格式
 
@@ -694,7 +752,7 @@ def import_scores():
         # 检测是否为方向名次格式
         is_direction_format = False
         for header in row3_values:
-            if header and ('(赋分)' in header or '方向校名次' in header or '方向班名次' in header):
+            if header and ('(赋分)' in header or '方向校名次' in header or '方向班名次' in header or '校次' in header or '班次' in header):
                 is_direction_format = True
                 break
 
